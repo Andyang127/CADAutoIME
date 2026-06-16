@@ -34,13 +34,17 @@
 ## 📋 运行环境全域覆盖
 
 CAD Auto IME 具备极强的向后和向前兼容性，一次安装，全域通用。
-##启动界面:
+## `CAD Auto IME` 启动界面
 
-<img width="2399" height="1321" alt="1" src="https://github.com/user-attachments/assets/ac75f8b2-43fe-49c9-bb6d-95daab82c735" />
+<p align="center">
+  <img width="60%" alt="CAD Auto IME 主界面" src="https://github.com/user-attachments/assets/ac75f8b2-43fe-49c9-bb6d-95daab82c735" />
+</p>
 
-##`CUSTOMAUTOIME`
+## `CUSTOMAUTOIME` 配置面板
 
-<img width="620" height="720" alt="2" src="https://github.com/user-attachments/assets/569a0fd1-546d-42e5-87d5-b0cfed172cbb" />
+<p align="center">
+  <img width="80%" alt="CAD Auto IME 配置面板" src="https://github.com/user-attachments/assets/569a0fd1-546d-42e5-87d5-b0cfed172cbb" />
+</p>
 
 
 
