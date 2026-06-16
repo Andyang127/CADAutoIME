@@ -7,20 +7,31 @@ PrivilegesRequired=lowest
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 OutputBaseFilename={#MyAppName} v{#MyAppVersion}
-; 统一输出到外层的 build/Release 文件夹
 OutputDir=..\build\Release
 DefaultDirName={userappdata}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DirExistsWarning=no
 ArchitecturesInstallIn64BitMode=x64compatible
-; 相对路径读取图标
 SetupIconFile=Logo.ico
 UninstallDisplayIcon={app}\logo.ico
+Compression=lzma2
+SolidCompression=yes
 
 [Files]
-; 智能抓取外层 build 目录下所有的 Sys 文件夹及编译好的 dll
-Source: "..\build\Sys*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-; 打包当前 installer 目录下的说明文档和图标
+; Sys17 - Sys27 各版本 DLL（逐一明确指定）
+Source: "..\build\Sys17\OpenCadIme_Sys17.dll"; DestDir: "{app}\Sys17"; Flags: ignoreversion
+Source: "..\build\Sys18\OpenCadIme_Sys18.dll"; DestDir: "{app}\Sys18"; Flags: ignoreversion
+Source: "..\build\Sys19\OpenCadIme_Sys19.dll"; DestDir: "{app}\Sys19"; Flags: ignoreversion
+Source: "..\build\Sys20\OpenCadIme_Sys20.dll"; DestDir: "{app}\Sys20"; Flags: ignoreversion
+Source: "..\build\Sys21\OpenCadIme_Sys21.dll"; DestDir: "{app}\Sys21"; Flags: ignoreversion
+Source: "..\build\Sys22\OpenCadIme_Sys22.dll"; DestDir: "{app}\Sys22"; Flags: ignoreversion
+Source: "..\build\Sys23\OpenCadIme_Sys23.dll"; DestDir: "{app}\Sys23"; Flags: ignoreversion
+Source: "..\build\Sys24\OpenCadIme_Sys24.dll"; DestDir: "{app}\Sys24"; Flags: ignoreversion
+Source: "..\build\Sys25\OpenCadIme_Sys25.dll"; DestDir: "{app}\Sys25"; Flags: ignoreversion
+Source: "..\build\Sys26\OpenCadIme_Sys26.dll"; DestDir: "{app}\Sys26"; Flags: ignoreversion
+Source: "..\build\Sys27\OpenCadIme_Sys27.dll"; DestDir: "{app}\Sys27"; Flags: ignoreversion
+
+; 说明文档和图标
 Source: "Readme.html"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Logo.ico"; DestDir: "{app}"; DestName: "logo.ico"; Flags: ignoreversion
 
@@ -35,14 +46,30 @@ Filename: "{app}\Readme.html"; Flags: postinstall shellexec skipifsilent
 [Languages]
 Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 
+[UninstallDelete]
+; 卸载时删除各个版本文件夹
+Type: filesandordirs; Name: "{app}\Sys17"
+Type: filesandordirs; Name: "{app}\Sys18"
+Type: filesandordirs; Name: "{app}\Sys19"
+Type: filesandordirs; Name: "{app}\Sys20"
+Type: filesandordirs; Name: "{app}\Sys21"
+Type: filesandordirs; Name: "{app}\Sys22"
+Type: filesandordirs; Name: "{app}\Sys23"
+Type: filesandordirs; Name: "{app}\Sys24"
+Type: filesandordirs; Name: "{app}\Sys25"
+Type: filesandordirs; Name: "{app}\Sys26"
+Type: filesandordirs; Name: "{app}\Sys27"
+Type: files; Name: "{app}\AutoImeCommands.txt"
+Type: files; Name: "{app}\Readme.html"
+Type: files; Name: "{app}\logo.ico"
+
 [Code]
-// 全局变量：记录用户是否选择删除配置
+// 全局变量
 var
   G_DeleteUserData: Boolean;
   G_DeleteOldConfig: Boolean;
 
-// 覆盖安装时是否删除旧配置
-
+// 检测程序是否运行
 function IsAppRunning(const FileName: string): Boolean;
 var
   WbemLocator, WbemService, WbemObjectSet: Variant;
@@ -57,6 +84,7 @@ begin
   end;
 end;
 
+// 强制关闭 CAD
 procedure ForceKillCAD();
 var
   ResultCode: Integer;
@@ -66,6 +94,7 @@ begin
   Sleep(1000);
 end;
 
+// 从路径中移除字符串
 function RemoveStringFromPath(const FullPath, TargetStr: string): string;
 var
   Res: string;
@@ -78,34 +107,35 @@ begin
   Result := Res;
 end;
 
+// 安装初始化
 function InitializeSetup(): Boolean;
 var
   OldVersion, UninstallString, NewVersion, OldInstallPath: string;
   ResultCode: Integer;
-  UninstKey: string;
-  AcadKey: string;
+  UninstKey, AcadKey: string;
 begin
   Result := True;
   G_DeleteOldConfig := False;
 
-  // =====================================================================
-  // 🚀 防呆检测：检查系统中是否已经安装了 AutoCAD
-  // =====================================================================
+  // ==============================================
+  // 防呆检测：检查是否安装了 AutoCAD
+  // ==============================================
   AcadKey := 'Software\Autodesk\AutoCAD';
-  // 同时检查当前用户和本地计算机注册表中是否存在CAD
   if (not RegKeyExists(HKEY_CURRENT_USER, AcadKey)) and (not RegKeyExists(HKEY_LOCAL_MACHINE, AcadKey)) then
   begin
     MsgBox('⛔ 程序安装拦截！' + #13#10 + #13#10 +
            '系统中未检测到任何 AutoCAD 环境。' + #13#10 +
            '本程序必须依赖 AutoCAD 运行，请【先安装 AutoCAD 并至少运行过一次】，然后再运行本安装程序！', mbError, MB_OK);
-    Result := False; // 返回 False 立即终止安装程序
+    Result := False;
     Exit;
   end;
-  // =====================================================================
 
   NewVersion := '{#SetupSetting("AppVersion")}';
   UninstKey := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{9F8E2A1B-4C5D-6E7F-8A9B-0C1D2E3F4A5B}_is1';
   
+  // ==============================================
+  // 检测 CAD 是否正在运行
+  // ==============================================
   if IsAppRunning('acad.exe') then
   begin
     if MsgBox('安装程序检测到 [ AutoCAD ] 正在运行中。' + #13#10 + #13#10 +
@@ -120,9 +150,9 @@ begin
     end;
   end;
 
-  // =====================================================================
-  // 🆕 覆盖安装：增加是否删除旧配置选项
-  // =====================================================================
+  // ==============================================
+  // 覆盖安装处理
+  // ==============================================
   if RegQueryStringValue(HKEY_CURRENT_USER, UninstKey, 'DisplayVersion', OldVersion) then
   begin
     case MsgBox('检测到系统已安装[CAD Auto IME] v' + OldVersion + '。' + #13#10 + #13#10 +
@@ -132,7 +162,6 @@ begin
               '取消：退出安装', mbConfirmation, MB_YESNOCANCEL) of
       IDYES:
         begin
-          // 保留旧配置：静默卸载
           G_DeleteOldConfig := False;
           if RegQueryStringValue(HKEY_CURRENT_USER, UninstKey, 'UninstallString', UninstallString) then
           begin
@@ -143,9 +172,7 @@ begin
         end;
       IDNO:
         begin
-          // 删除旧配置：先删配置再卸载
           G_DeleteOldConfig := True;
-          // 删除旧配置文件
           if RegQueryStringValue(HKEY_CURRENT_USER, UninstKey, 'InstallLocation', OldInstallPath) then
           begin
             OldInstallPath := RemoveQuotes(OldInstallPath);
@@ -153,7 +180,6 @@ begin
               DeleteFile(OldInstallPath + '\AutoImeCommands.txt');
             RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\QianZuiMoYu\CADAutoIme');
           end;
-          // 执行卸载
           if RegQueryStringValue(HKEY_CURRENT_USER, UninstKey, 'UninstallString', UninstallString) then
           begin
             UninstallString := RemoveQuotes(UninstallString);
@@ -170,11 +196,12 @@ begin
   end;
 end;
 
+// 卸载初始化
 function InitializeUninstall(): Boolean;
 begin
   Result := True;
   G_DeleteUserData := False;
-  // 如果是静默卸载（如覆盖安装时调用），直接跳过弹窗
+
   if UninstallSilent then Exit;
 
   if IsAppRunning('acad.exe') then
@@ -191,12 +218,13 @@ begin
 
   if MsgBox('即将卸载 CAD Auto IME。' + #13#10 + #13#10 + 
             '是否要彻底清除所有数据？' + #13#10 + #13#10 +
-            '(选择“是”将连同你自定义的快捷键白名单一并删除)', mbConfirmation, MB_YESNO) = IDYES then
+            '(选择"是"将连同你自定义的快捷键白名单一并删除)', mbConfirmation, MB_YESNO) = IDYES then
   begin
     G_DeleteUserData := True;
   end;
 end;
 
+// 安装后写入注册表（自动加载插件）
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   AcadKey, RKey, AcadInstKey, VariablesKey, AppKey: string;
@@ -209,6 +237,7 @@ begin
     InstallPath := ExpandConstant('{app}');
     TrustedPathFormat := InstallPath + '\...';
     AcadKey := 'Software\Autodesk\AutoCAD';
+
     if RegGetSubkeyNames(HKEY_CURRENT_USER, AcadKey, RNames) then
     begin
       for i := 0 to GetArrayLength(RNames)-1 do
@@ -235,18 +264,21 @@ begin
             begin
               AppKey := RKey + '\' + InstNames[j] + '\Applications\CADAutoIme';
               DllPath := InstallPath + '\Sys' + SysVer + '\OpenCadIme_Sys' + SysVer + '.dll';
+
               if FileExists(DllPath) then
               begin
                 RegWriteDWordValue(HKEY_CURRENT_USER, AppKey, 'LOADCTRLS', 2);
                 RegWriteDWordValue(HKEY_CURRENT_USER, AppKey, 'MANAGED', 1);
                 RegWriteStringValue(HKEY_CURRENT_USER, AppKey, 'LOADER', DllPath);
                 RegWriteStringValue(HKEY_CURRENT_USER, AppKey, 'DESCRIPTION', 'CAD Auto Input Method Engine');
+
                 AcadInstKey := RKey + '\' + InstNames[j] + '\Profiles';
                 if RegGetSubkeyNames(HKEY_CURRENT_USER, AcadInstKey, ProfileNames) then
                 begin
                   for k := 0 to GetArrayLength(ProfileNames)-1 do
                   begin
                     VariablesKey := AcadInstKey + '\' + ProfileNames[k] + '\Variables';
+
                     if RegQueryStringValue(HKEY_CURRENT_USER, VariablesKey, 'ACAD', CurrentPath) then
                     begin
                       if Pos(Lowercase(InstallPath), Lowercase(CurrentPath)) = 0 then
@@ -255,6 +287,7 @@ begin
                         RegWriteStringValue(HKEY_CURRENT_USER, VariablesKey, 'ACAD', NewPath);
                       end;
                     end;
+
                     if RegQueryStringValue(HKEY_CURRENT_USER, VariablesKey, 'TRUSTEDPATHS', CurrentPath) then
                     begin
                       if Pos(Lowercase(InstallPath), Lowercase(CurrentPath)) = 0 then
@@ -276,6 +309,7 @@ begin
   end;
 end;
 
+// 卸载时清理注册表
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   AcadKey, RKey, AcadInstKey, VariablesKey, AppKey: string;
@@ -286,10 +320,11 @@ begin
   if CurUninstallStep = usUninstall then
   begin
     RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\QianZuiMoYu\CADAutoIme');
+
     InstallPath := ExpandConstant('{app}');
     TrustedPathFormat := InstallPath + '\...'; 
-
     AcadKey := 'Software\Autodesk\AutoCAD';
+
     if RegGetSubkeyNames(HKEY_CURRENT_USER, AcadKey, RNames) then
     begin
       for i := 0 to GetArrayLength(RNames)-1 do
@@ -308,18 +343,21 @@ begin
             begin
               AppKey := RKey + '\' + InstNames[j] + '\Applications\CADAutoIme';
               RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, AppKey);
+
               AcadInstKey := RKey + '\' + InstNames[j] + '\Profiles';
               if RegGetSubkeyNames(HKEY_CURRENT_USER, AcadInstKey, ProfileNames) then
               begin
                 for k := 0 to GetArrayLength(ProfileNames)-1 do
                 begin
                   VariablesKey := AcadInstKey + '\' + ProfileNames[k] + '\Variables';
+
                   if RegQueryStringValue(HKEY_CURRENT_USER, VariablesKey, 'ACAD', CurrentPath) then
                   begin
                     NewPath := RemoveStringFromPath(CurrentPath, InstallPath);
                     if NewPath <> CurrentPath then
                       RegWriteStringValue(HKEY_CURRENT_USER, VariablesKey, 'ACAD', NewPath);
                   end;
+
                   if RegQueryStringValue(HKEY_CURRENT_USER, VariablesKey, 'TRUSTEDPATHS', CurrentPath) then
                   begin
                     NewPath := RemoveStringFromPath(CurrentPath, TrustedPathFormat);
@@ -347,9 +385,3 @@ begin
     end;
   end;
 end;
-
-[UninstallDelete]
-; 卸载时彻底清除各个 Sys 版本的子文件夹及其内部文件
-Type: filesandordirs; Name: "{app}\Sys*"
-Type: files; Name: "{app}\Readme.html"
-Type: files; Name: "{app}\logo.ico"
