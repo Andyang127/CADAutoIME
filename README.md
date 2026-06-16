@@ -36,8 +36,6 @@
 CAD Auto IME 具备极强的向后和向前兼容性，一次安装，全域通用。
 ## `CAD Auto IME` 启动界面
 
-<<<<<<< HEAD
-=======
 <p align="center">
   <img width="80%" alt="CAD Auto IME 主界面" src="https://github.com/user-attachments/assets/ac75f8b2-43fe-49c9-bb6d-95daab82c735" />
 </p>
