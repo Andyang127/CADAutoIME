@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<Nullable>disable</Nullable>
+		<PlatformTarget>x64</PlatformTarget>
+		<OutputPath>..\..\build\Sys26</OutputPath>
+		<AppendTargetFrameworkToOutputPath>False</AppendTargetFrameworkToOutputPath>
+		<AppendRuntimeIdentifierToOutputPath>False</AppendRuntimeIdentifierToOutputPath>
+		<AppendConfigurationToOutputPath>False</AppendConfigurationToOutputPath>
+		<GenerateDependencyFile>False</GenerateDependencyFile>
+		<BaseOutputPath>..\..\build\Sys26</BaseOutputPath>
+		<NoWarn>$(NoWarn);MSB3277</NoWarn>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<DebugType>none</DebugType>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<DebugType>none</DebugType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Reference Include="AcCoreMgd">
+			<HintPath>..\..\lib\Sys24_CAD 2026\AcCoreMgd.dll</HintPath>
+			<Private>False</Private>
+			<SpecificVersion>False</SpecificVersion>
+		</Reference>
+		<Reference Include="AcDbMgd">
+			<HintPath>..\..\lib\Sys24_CAD 2026\AcDbMgd.dll</HintPath>
+			<Private>False</Private>
+			<SpecificVersion>False</SpecificVersion>
+		</Reference>
+		<Reference Include="AcMgd">
+			<HintPath>..\..\lib\Sys24_CAD 2026\AcMgd.dll</HintPath>
+			<Private>False</Private>
+			<SpecificVersion>False</SpecificVersion>
+		</Reference>
+	</ItemGroup>
+
+	<Import Project="..\..\OpenCadIme.Core\OpenCadIme.Core.projitems" Label="Shared" />
+
+</Project>

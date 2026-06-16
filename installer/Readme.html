@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimal-ui">
+    <title>CAD输入法自动切换助手 - 说明文档</title>
+    <style type="text/css">
+        :root {
+            --primary-color: #009688;
+            --text-main: #2c3e50;
+            --text-muted: #666;
+            --bg-light: #f8fcfb;
+            --border-color: #e1e4e8;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background-color: #f4f5f7;
+            margin: 0;
+            padding: 20px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 40px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1, h2, h3, h4 { color: var(--text-main); margin-top: 1.5em; margin-bottom: 0.8em; font-weight: 600; }
+        h1 { font-size: 28px; text-align: center; border-bottom: 2px solid var(--primary-color); padding-bottom: 15px; margin-top: 0; }
+        h2 { font-size: 22px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; color: var(--primary-color); }
+        h3 { font-size: 18px; }
+        .subtitle { text-align: center; color: var(--text-muted); font-size: 15px; margin-top: -10px; margin-bottom: 30px; letter-spacing: 1px; }
+        
+        /* 提示框样式 */
+        .alert-success { background-color: #e6f7e9; border-left: 5px solid #28a745; padding: 15px 20px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .alert-success h3 { margin: 0 0 10px 0; color: #1e7e34; font-size: 16px; }
+        .alert-success p { margin: 5px 0; color: #2d6a3f; font-size: 14px; }
+        
+        blockquote { border-left: 4px solid var(--primary-color); padding: 10px 15px; color: var(--text-muted); background-color: var(--bg-light); margin: 1.5em 0; border-radius: 0 4px 4px 0; }
+        blockquote p { margin: 0; }
+        
+        /* 代码样式 */
+        code { font-family: Consolas, monospace; background-color: #f6f8fa; padding: 3px 6px; border-radius: 4px; color: #e53245; font-size: 14px; font-weight: bold; }
+        
+        /* 表格样式 */
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 15px; }
+        th, td { border: 1px solid var(--border-color); padding: 12px 15px; text-align: left; }
+        th { background-color: var(--primary-color); color: white; font-weight: 500; }
+        tr:nth-child(even) { background-color: #fafafa; }
+        tr:hover { background-color: var(--bg-light); }
+        
+        /* 列表样式 */
+        ul, ol { padding-left: 25px; }
+        li { margin-bottom: 8px; }
+        
+        hr { border: 0; border-top: 1px solid var(--border-color); margin: 30px 0; }
+        a { color: #0366d6; text-decoration: none; font-weight: 500; }
+        a:hover { text-decoration: underline; color: #0056b3; }
+        
+        .footer { text-align: center; color: #999; font-size: 13px; margin-top: 40px; border-top: 1px dashed #eee; padding-top: 20px; }
+    </style>
+</head>
+
+<body>
+    <div class="markdown-body">
+        <h1>CAD输入法自动切换助手 - 说明文档</h1>
+        <div class="subtitle">CAD Auto IME | 技术文档 (v0.2)</div>
+
+        <div class="alert-success">
+            <h3>🎉 恭喜！安装部署已完成</h3>
+            <p><strong>系统提示</strong>：CAD 输入法自动切换助手底层运行库已成功部署至你的计算机系统。</p>
+            <p>📌 <strong>安装顺序防呆提示</strong>：本插件属于底层注册表注入组件。请务必<strong>先安装并运行过至少一次 AutoCAD</strong>，然后再安装本插件。若你重装或升级了 AutoCAD，请将本插件卸载后重新安装一次，以便重新写入加载引导。</p>
+            <p>📌 <strong>桌面快捷方式</strong>：仅为你方便查阅本说明文档而创建，可根据个人使用习惯随时删除，<strong>绝不影响程序核心功能的正常后台运行</strong>。</p>
+        </div>
+
+        <h2>🎯 产品概述</h2>
+        <h3>🔹 产品定位</h3>
+        <p><strong>CAD Auto IME</strong> 是一款专为工程设计领域打造的<strong>底层系统级效率增强组件</strong>，采用轻量级架构设计，专注于解决 AutoCAD 操作环境中英文输入法频繁切换的行业痛点。</p>
+        
+        <h3>🔹 解决的核心问题</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th width="20%">使用场景</th>
+                    <th width="40%">传统操作方式</th>
+                    <th width="40%">本工具解决方案 (v0.2)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>命令输入</strong></td>
+                    <td>需手动切换至英文输入法</td>
+                    <td>✅ 自动识别并切换英文状态</td>
+                </tr>
+                <tr>
+                    <td><strong>文字标注</strong></td>
+                    <td>需手动切换至中文输入法</td>
+                    <td>✅ 自动识别并包含透明命令，秒切中文</td>
+                </tr>
+                <tr>
+                    <td><strong>快捷键操作</strong></td>
+                    <td>频繁按 <code>Shift</code> / <code>Ctrl+Shift</code></td>
+                    <td>✅ 全程无需人工干预，彻底释放双手</td>
+                </tr>
+                <tr>
+                    <td><strong>个性化需求</strong></td>
+                    <td>遇到生僻自建命令无法识别</td>
+                    <td>✅ <strong>(新)</strong> 提供图形化白名单面板，随心添加</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>⚡ v0.2 核心新特性</h2>
+        <p>在保持 v0.1 极致轻量与静默的基础上，v0.2 迎来了史诗级进化：</p>
+        
+        <h3>1. 🎨 图形化配置面板 (自定义白名单)</h3>
+        <p>告别繁琐的配置文件修改！新增原生的 WinForms 图形化管理界面，内置 50+ 个核心保护命令。你可以随时添加你的专属插件命令或快捷键，一键保存，<strong>立即生效</strong>。</p>
+        
+        <h3>2. 🛡️ 沉浸式 HUD 欢迎视窗</h3>
+        <p>首次打开图纸时，右下角将弹出精心设计的圆角半透明 HUD 欢迎提示，持续 15 秒并伴随倒计时平滑淡出，不遮挡任何工作视线，让你确切感知插件已就绪。<code>注:本提示只会在第一次加载对应CAD版本的时候显示,后期不会再次显示。</code></p>
+        
+        <h3>3. 🚀 跨世代架构引擎 (支持 .NET 10)</h3>
+        <p>底层核心经过全面重构，完美兼容从 AutoCAD 2007 (老旧 .NET Framework) 一直到目前最新的 AutoCAD 2027 (前沿 .NET 10.0 架构)，真正做到“全宇宙版本通杀”。</p>
+
+        <h2>📖 使用指南与命令</h2>
+        <blockquote>
+            <p><strong>💡 重要提示</strong>：本程序深度集成于 AutoCAD 底层，随 CAD 启动而<strong>自动运行</strong>。除了后台静默工作外，v0.2 还为你提供了两个极其方便的交互命令：</p>
+        </blockquote>
+
+        <h3>🔹 1. 呼出白名单配置面板</h3>
+        <p>在 CAD 命令行输入：👉 <code>CUSTOMAUTOIME</code></p>
+        <p><strong>功能</strong>：弹出输入法白名单配置窗口。你可以在左侧查看受保护的内置命令，在右侧随意添加你自己的拼音快捷命令（如你常用的外部插件快捷键）。</p>
+
+        <h3>🔹 2. 临时开启/关闭助手</h3>
+        <p>在 CAD 命令行输入：👉 <code>TOGGLEAUTOIME</code></p>
+        <p><strong>功能</strong>：一键切换插件的运行状态。如果当前图纸的特定作业不需要自动切换，可通过此命令临时关闭；再次输入即可重新开启。</p>
+
+        <h2>💻 支持的 AutoCAD 版本</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>版本代号</th>
+                    <th>官方版本</th>
+                    <th>架构/框架要求</th>
+                    <th>支持状态</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>AutoCAD 2007~2014</strong></td>
+                    <td>R17.0 ~ R19.1</td>
+                    <td>32/64 位 (.NET 2~4)</td>
+                    <td>✅ 完全支持</td>
+                </tr>
+                <tr>
+                    <td><strong>AutoCAD 2015~2024</strong></td>
+                    <td>R20.0 ~ R24.3</td>
+                    <td>64 位 (.NET 4.x)</td>
+                    <td>✅ 完全支持</td>
+                </tr>
+                <tr>
+                    <td><strong>AutoCAD 2025</strong></td>
+                    <td>R25.0</td>
+                    <td>64 位 (.NET 8.0)</td>
+                    <td>✅ <strong>全面适配</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>AutoCAD 2026</strong></td>
+                    <td>R25.1</td>
+                    <td>64 位 (.NET 9.0)</td>
+                    <td>✅ <strong>全面适配</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>AutoCAD 2027</strong></td>
+                    <td>R26.0</td>
+                    <td>64 位 (.NET 10.0)</td>
+                    <td>✅ <strong>前瞻性支持</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>🔧 技术架构与安全</h2>
+        <h3>🛡️ 极致的安全与稳定性</h3>
+        <ul>
+            <li><strong>主线程防死锁设计</strong>：v0.2 彻底重构了 IME 切换的线程调度，采用 CAD 主线程安全延时队列，彻底杜绝了高版本 Windows 11 下输入法卡死、崩溃的隐患。</li>
+            <li><strong>配置防丢机制</strong>：用户自定义白名单数据统一安全存放在 Windows 系统漫游目录 (<code>%AppData%\CAD Auto IME</code>)，即使重装 AutoCAD 或升级插件，你的自定义配置也永不丢失。</li>
+            <li><strong>零文档安全</strong>：即使关闭所有图纸处于“零文档状态”，插件依然保持高度稳定，不会触发任何报错。</li>
+        </ul>
+
+        <h3>🔒 隐私与绿色声明</h3>
+        <ul>
+            <li>✅ <strong>无网络请求</strong>：纯本地运行，不收集任何用户数据</li>
+            <li>✅ <strong>无广告植入</strong>：纯净绿色软件，无任何商业推广</li>
+            <li>✅ <strong>无残留写入</strong>：卸载程序自动擦除注册表 <code>TRUSTEDPATHS</code> 等注入项，来去无踪。</li>
+        </ul>
+
+        <h2>❓ 常见问题</h2>
+        <h3>Q1：我输入了自定义命令，但为什么没有生效？</h3>
+        <p><strong>A</strong>：请在 CAD 中输入 <code>CUSTOMAUTOIME</code>，确保你的命令已成功添加到右侧列表中，并且<strong>点击了“保存配置并立即生效”按钮</strong>。系统会自动将其转为大写并实时监控。</p>
+
+        <h3>Q2：程序会影响 AutoCAD 运行速度吗？</h3>
+        <p><strong>A</strong>：不会。本程序 CPU 占用率极低，仅在敲击键盘触发命令的瞬间进行极小开销的判定，对 AutoCAD 性能无任何可感知的影响。</p>
+
+        <h3>Q3：为什么 CAD 启动时会提示“不信任的应用程序”？</h3>
+        <p><strong>A</strong>：通常安装包会自动将插件目录加入 CAD 的“受信任位置（TRUSTEDPATHS）”。如果你的安全防护软件拦截了注册表写入，你可以在 CAD 中输入 <code>OPTIONS</code>，在“文件”->“受信任的位置”中手动添加本插件的安装目录。</p>
+
+        <h2>🗑️ 卸载流程</h2>
+        <p>本程序提供极其纯净的卸载体验，不留任何系统垃圾。</p>
+        <ol>
+            <li>打开 Windows <strong>「开始菜单」</strong>，找到 <strong>「CAD Auto Ime」</strong> 程序组。</li>
+            <li>点击 <strong>「卸载 CAD 输入法助手」</strong>。</li>
+            <li><strong>重要提示</strong>：卸载时程序会询问<strong>“是否要彻底清除所有数据”</strong>。如果你未来还打算继续使用，请选择“否”以保留你辛苦积攒的自定义快捷键白名单。</li>
+            <li>（注：为确保彻底清除注册表占用，卸载时若 CAD 正在运行，程序会提示你保存图纸并自动关闭 CAD 进程）。</li>
+        </ol>
+
+        <h2>📝 版本历史</h2>
+        <h3>🚀 v0.2.0 (最新版)</h3>
+        <ul>
+            <li>✨ <strong>新增</strong>：<code>CUSTOMAUTOIME</code> 图形化白名单配置面板，支持自定义外部命令。</li>
+            <li>🔧 <strong>底层架构</strong>：全面支持 AutoCAD 2025/2026/2027 (.NET 8/9/10 核心)。</li>
+            <li>🐛 <strong>修复</strong>：彻底修复跨线程调用导致的输入法焦点死锁问题。</li>
+            <li>🐛 <strong>修复</strong>：完善对 <code>'ZOOM</code> 等单引号透明命令的智能识别。</li>
+            <li>📁 <strong>优化</strong>：配置文件迁移至 Windows <code>%AppData%</code> 目录，彻底解决 C 盘读写权限问题。</li>
+        </ul>
+
+        <h3>🏁 v0.1.0 (初创版)</h3>
+        <ul>
+            <li>✅ 首次公开发布。</li>
+            <li>✅ 支持 AutoCAD 2007 ~ 2024 全版本。</li>
+            <li>✅ 实现核心输入法后台静默自动切换功能。</li>
+        </ul>
+
+        <h2>📮 联系与反馈</h2>
+        <h3>作者信息</h3>
+        <table>
+            <tbody>
+                <tr>
+                    <td width="20%"><strong>作者</strong></td>
+                    <td>Yang Jun [浅醉·墨语] Andy_127</td>
+                </tr>
+                <tr>
+                    <td><strong>技术定位</strong></td>
+                    <td>兴趣爱好,交流分享</td>
+                </tr>
+                <tr>
+                    <td><strong>开发理念</strong></td>
+                    <td>用最底层的技术解决最实际的问题，让设计更专注</td>
+                </tr>
+                <tr>
+                    <td><strong>意见反馈</strong></td>
+                    <td>📱 <a href="https://www.douyin.com/user/MS4wLjABAAAA3MenKPeyKOaRDEFrkZW_mBE3e3DNQrCEulaj1adJWFQ" target="_blank">【浅醉·墨语】_Andy_127</a></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>📜 版权声明</h2>
+        <ul>
+            <li><strong>许可协议</strong>：本软件为<strong>免费自由软件</strong>，允许免费使用于个人场景，自由传播和分享，无任何功能限制。</li>
+            <li><strong>禁止行为</strong>：禁止修改、反编译、逆向工程本程序；禁止将本程序用于非法用途、二次打包或商业销售。</li>
+            <li><strong>免责声明</strong>：本软件按 "现状" 提供，不提供任何明示或暗示的保证。在法律允许的最大范围内，作者不对因使用本软件产生的任何直接或间接损失承担责任。</li>
+        </ul>
+
+        <div class="footer">
+            <p><strong>感谢你选择 CAD 输入法自动切换助手</strong><br><em>让每一位设计师都能专注于创作，而非输入法切换</em></p>
+            <p>文档版本：v0.2.0 | 更新时间：2026 年 | 适配系统：Windows 7/10/11 (64 位)</p>
+        </div>
+    </div>
+</body>
+</html>
