@@ -95,7 +95,7 @@ mkdir lib
                 
 # 3. 编译                  
 >>>>>>> d3bac81af85cd9752721598cbe44a6127f61dcd3        
-# 使用 Visual Studio 2022 打开 OpenCadIme.sln，Release 模式生成。
+# 使用 Visual Studio 2026 打开 OpenCadIme.sln，Release 模式生成。
 ```
 
  
