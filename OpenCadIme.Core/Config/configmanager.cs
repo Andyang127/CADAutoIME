@@ -24,10 +24,9 @@ namespace OpenCadIme
             "DIM", "DIMLINEAR", "DIMALIGNED", "DIMANGULAR", "DIMRADIUS", "DIMDIAMETER",
             "DIMORDINATE", "DIMBASELINE", "DIMCONTINUE",
             "QLEADER", "LEADER", "MLEADER", "MLEADEREDIT", "MLEADERSTYLE", "MLEADERCONTENTEDIT",
-            "DIMEDIT", "DIMTEDIT", "TOLERANCE",
+            "DIMEDIT", "DIMTEDIT", "TOLERANCE","CLASSICINSERT", "MINSERT",
             "ATTDEF", "-ATTDEF", "ATTEDIT", "-ATTEDIT", "EATTEDIT", "BATTMAN", "ATTREDEF", "ATTSYNC",
             "BLOCK", "-BLOCK", "BEDIT", "REFEDIT", "REFCLOSE", "WBLOCK", "INSERT", "-INSERT",
-            "CLASSICINSERT", "MINSERT",
             "BTABLE", "BACTION", "BPARAMETER", "BVISSTATES","TABLE", "TABLEDIT", "TABLEEXPORT", "FIELD",
             "SAVE", "SAVEAS", "QSAVE", "EXPORT", "OPEN", "NEW", "PLOT", "PUBLISH","RENAME", "PURGE",
             "LAYER", "CLASSICLAYER", "STYLE", "TABLESTYLE", "DIMSTYLE", "MLSTYLE", "GROUP",
@@ -38,12 +37,9 @@ namespace OpenCadIme
             "DHSHR", "DHBJ", "WZSHR", "TYBJ", "YPZ", "XXBZH", "BGHZH", "AAPMGZ",
             "WZBH", "WZBG", "WZCD", "WZFH", "WZJX", "WZPL", "WZQX", "WZSZ", "WZTX", "WZZJ",
             "BZBH", "BZCD", "BZFH", "BZJX", "BZPL", "BZQX", "BZSZ", "BZTX", "BZZJ",
-            "PMZ", "LMBZ", "PMMZ",
-            "GJBZ", "GJFH", "GJBH", "MSBZ", "JSBZ", "GJMC",
-            "GXBZ", "SLBZ", "SBMC", "SMWZ",
-            "FKBZ", "SGBZ", "SBMC", "SMWZ",
-            "YQ_WZBH", "YQ_WZPL", "YQ_WZTX", "YQ_WZBG",
-            "YQ_BZBJ", "YQ_BZPL", "YQ_BZTX",
+            "PMZ", "LMBZ", "PMMZ","GJBZ", "GJFH", "GJBH", "MSBZ", "JSBZ", "GJMC",
+            "GXBZ", "SLBZ", "SBMC", "SMWZ","FKBZ", "SGBZ", 
+            "YQ_WZBH", "YQ_WZPL", "YQ_WZTX", "YQ_WZBG", "YQ_BZBJ", "YQ_BZPL", "YQ_BZTX",
             "YQ_BGHZ", "YQ_YPZ", "YQ_MCBZ", "YQ_GJMC",
             "TS_GJBZ", "TS_GJBH", "TS_SMZ", "TS_JJS", "TS_GJMC", "TS_HFBZ"
         };
@@ -63,7 +59,6 @@ namespace OpenCadIme
         {
             try
             {
-                // ✅ 修复：将配置文件移至 AppData，彻底解决 C盘系统目录无权限保存导致的异常
                 string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                 string pluginDir = Path.Combine(appData, "OpenCadIme");
                 if (!Directory.Exists(pluginDir))
@@ -118,7 +113,6 @@ namespace OpenCadIme
                 string line;
                 while ((line = sr.ReadLine()) != null)
                 {
-                    // ✅ 修复：清理由记事本手动编辑可能引入的 BOM 头与多余空格
                     string cleanLine = line.Trim('\uFEFF', '\u200B').Trim();
                     if (string.IsNullOrEmpty(cleanLine)
                         || cleanLine.StartsWith("#", StringComparison.Ordinal)
@@ -184,7 +178,6 @@ namespace OpenCadIme
         {
             if (allCommands == null) throw new ArgumentNullException("allCommands");
 
-            // ✅ 修复：多进程死锁防御，增加重试机制
             int maxRetries = 3;
             for (int i = 0; i < maxRetries; i++)
             {
@@ -208,10 +201,9 @@ namespace OpenCadIme
 
                         File.WriteAllLines(tempPath, fileContent.ToArray(), new UTF8Encoding(false));
 
-                        if (File.Exists(configPath))
-                            File.Replace(tempPath, configPath, configPath + ".bak");
-                        else
-                            File.Move(tempPath, configPath);
+                        // 修复 V0.3: 摒弃 Delete + Move 的危险写法，改用安全的 Copy 覆盖机制
+                        File.Copy(tempPath, configPath, true);
+                        File.Delete(tempPath);
                     }
                     break;
                 }
@@ -220,10 +212,10 @@ namespace OpenCadIme
                     if (i == maxRetries - 1)
                     {
                         System.Windows.Forms.MessageBox.Show(
-                            "保存配置失败，请检查文件是否被占用。\n\n错误详情：" + ex.Message,
+                            "保存配置失败，请检查文件是否被其他 CAD 进程占用。\n\n错误详情：" + ex.Message,
                             "保存错误", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
                     }
-                    Thread.Sleep(200);
+                    Thread.Sleep(200); // 避让其他进程
                 }
             }
         }

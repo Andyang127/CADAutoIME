@@ -135,7 +135,7 @@ namespace OpenCadIme
             lblTitle.MouseDown += Header_MouseDown;
 
             // ✅ 增加 Anchor = AnchorStyles.Bottom 使其与主标题底边对齐，并微调 Margin 使其处于完美的右下角视觉位置
-            Label lblVer = new Label { Text = "v0.2", Font = FontSubtitle, ForeColor = ThemeCyan, AutoSize = true, Margin = new Padding(4, 0, 0, 3), Anchor = AnchorStyles.Bottom };
+            Label lblVer = new Label { Text = "v0.2.1", Font = FontSubtitle, ForeColor = ThemeCyan, AutoSize = true, Margin = new Padding(4, 0, 0, 3), Anchor = AnchorStyles.Bottom };
             lblVer.MouseDown += Header_MouseDown;
 
             // ✅ 修复：必须把主标题和版本号加进横向容器里

@@ -9,8 +9,15 @@
     <Import_RootNamespace>OpenCadIme.Core</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)CADInput.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ConfigForm.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ConfigManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\imecontroller.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)pluginmain.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UI\ConfigForm.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Config\ConfigManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\win32api.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UI\HudManager.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Interop\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Config\" />
   </ItemGroup>
 </Project>
