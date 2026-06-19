@@ -69,7 +69,7 @@
 <body>
     <div class="markdown-body">
         <h1>CAD输入法自动切换助手 - 说明文档</h1>
-        <div class="subtitle">CAD Auto IME | 技术文档 (v0.2)</div>
+        <div class="subtitle">CAD Auto IME | 技术文档 (v0.2.1)</div>
 
         <div class="alert-success">
             <h3>🎉 恭喜！安装部署已完成</h3>
@@ -88,7 +88,7 @@
                 <tr>
                     <th width="20%">使用场景</th>
                     <th width="40%">传统操作方式</th>
-                    <th width="40%">本工具解决方案 (v0.2)</th>
+                    <th width="40%">本工具解决方案 (v0.2.1)</th>
                 </tr>
             </thead>
             <tbody>
@@ -115,7 +115,7 @@
             </tbody>
         </table>
 
-        <h2>⚡ v0.2 核心新特性</h2>
+        <h2>⚡ v0.2.x 核心新特性</h2>
         <p>在保持 v0.1 极致轻量与静默的基础上，v0.2 迎来了史诗级进化：</p>
         
         <h3>1. 🎨 图形化配置面板 (自定义白名单)</h3>
@@ -219,7 +219,15 @@
         </ol>
 
         <h2>📝 版本历史</h2>
-        <h3>🚀 v0.2.0 (最新版)</h3>
+        <h3>🚀 v0.2.1 (Hotfix 最新版)</h3>
+        <ul>
+            <li>✨ <strong>核心控制</strong>：引入中英文模式 (ConversionStatus) 双重控制，彻底解决 Win10 下需要手动按 Shift 切换的问题。</li>
+            <li>🔧 <strong>底层穿透</strong>：加入 <code>ImmGetDefaultIMEWnd</code> 降维打击机制，修复 Win10 教育版 TSF 架构下切换失效的 Bug。</li>
+            <li>🛡️ <strong>极强防崩</strong>：引入 <code>_docLock</code> 线程锁，修复多图纸并发或高频操作时引发的“集合已被修改”致命崩溃 (Fatal Error)。</li>
+            <li>💾 <strong>数据安全</strong>：完善 ConfigManager，改用原生的安全 Copy 覆盖机制保存配置，彻底消除多进程下白名单清空的隐患。</li>
+        </ul>
+
+        <h3>📦 v0.2.0 (架构重构版)</h3>
         <ul>
             <li>✨ <strong>新增</strong>：<code>CUSTOMAUTOIME</code> 图形化白名单配置面板，支持自定义外部命令。</li>
             <li>🔧 <strong>底层架构</strong>：全面支持 AutoCAD 2025/2026/2027 (.NET 8/9/10 核心)。</li>
@@ -267,7 +275,7 @@
 
         <div class="footer">
             <p><strong>感谢你选择 CAD 输入法自动切换助手</strong><br><em>让每一位设计师都能专注于创作，而非输入法切换</em></p>
-            <p>文档版本：v0.2.0 | 更新时间：2026 年 | 适配系统：Windows 7/10/11 (64 位)</p>
+            <p>文档版本：v0.2.1 | 更新时间：2026 年06年19日 | 适配系统：Windows 7/10/11 (64 位)</p>
         </div>
     </div>
 </body>

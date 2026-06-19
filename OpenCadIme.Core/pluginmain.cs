@@ -14,19 +14,23 @@ namespace OpenCadIme
     /// </summary>
     public class PluginMain : IExtensionApplication, IDisposable
     {
-        private const string AppVersion = "0.2.1"; // 升级为 v0.2.1.0
+        private const string AppVersion = "0.2.2";
 
         private Dictionary<string, bool> _chineseCommands;
         private List<Document> _hookedDocs = new List<Document>();
         private List<Document> _pendingWelcomeDocs = new List<Document>();
-        
-        // 修复 V0.3: 引入线程锁，防止并发操作导致集合被修改引发 Fatal Error
+
         private readonly object _docLock = new object();
-        
+
         private bool _isPluginEnabled = true;
         private bool _disposed = false;
 
         private HudManager _hudManager;
+
+        // --- V0.3 新增：狙击手焦点监听引擎 ---
+        private IntPtr _winEventHook = IntPtr.Zero;
+        private Win32API.WinEventDelegate _hookDelegate; // 必须保持为类级变量，防止被垃圾回收(GC)清理
+        private uint _currentProcessId;
 
         #region 生命周期
         public void Initialize()
@@ -35,7 +39,11 @@ namespace OpenCadIme
             {
                 _isPluginEnabled = true;
                 _disposed = false;
-                
+
+                // 初始化进程 ID 和 钩子委托
+                _currentProcessId = Win32API.GetCurrentProcessId();
+                _hookDelegate = new Win32API.WinEventDelegate(WinEventCallback);
+
                 lock (_docLock)
                 {
                     _hookedDocs.Clear();
@@ -68,6 +76,8 @@ namespace OpenCadIme
             {
                 try
                 {
+                    StopFocusHook(); // 销毁时务必拔掉系统钩子
+
                     Application.DocumentManager.DocumentCreated -= OnDocumentCreated;
                     Application.DocumentManager.DocumentBecameCurrent -= OnDocumentBecameCurrent;
                     Application.DocumentManager.DocumentDestroyed -= OnDocumentDestroyed;
@@ -98,12 +108,52 @@ namespace OpenCadIme
         ~PluginMain() { Dispose(false); }
         #endregion
 
+        #region 终极狙击引擎 (系统级事件挂载)
+
+        private void StartFocusHook()
+        {
+            if (_winEventHook == IntPtr.Zero)
+            {
+                // 注册系统焦点变化钩子，且仅限当前 CAD 进程内，彻底保证 0 性能损耗与绝对安全
+                _winEventHook = Win32API.SetWinEventHook(
+                    Win32API.EVENT_OBJECT_FOCUS, Win32API.EVENT_OBJECT_FOCUS,
+                    IntPtr.Zero, _hookDelegate, _currentProcessId, 0, Win32API.WINEVENT_OUTOFCONTEXT);
+            }
+        }
+
+        private void StopFocusHook()
+        {
+            if (_winEventHook != IntPtr.Zero)
+            {
+                Win32API.UnhookWinEvent(_winEventHook);
+                _winEventHook = IntPtr.Zero;
+            }
+        }
+
+        /// <summary>
+        /// 当 CAD 内有任何子窗口（包含刚弹出的多行文字编辑框）拿到焦点时，系统会瞬间回调这个函数
+        /// </summary>
+        private void WinEventCallback(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
+        {
+            if (!_isPluginEnabled) return;
+            try
+            {
+                if (eventType == Win32API.EVENT_OBJECT_FOCUS && hwnd != IntPtr.Zero)
+                {
+                    // 弹夹上膛：直接对准刚刚抢到焦点的新窗口发射中文强制指令！
+                    ImeController.ForceChinese(hwnd);
+                }
+            }
+            catch { }
+        }
+
+        #endregion
+
         #region CAD 图纸与环境事件
         private void OnApplicationIdle(object sender, EventArgs e)
         {
             try
             {
-                // 修复 V0.3: ActiveDocument 调用自身也可能抛出异常，必须防御
                 Document doc = null;
                 try { doc = Application.DocumentManager.MdiActiveDocument; } catch { return; }
 
@@ -176,14 +226,13 @@ namespace OpenCadIme
                 {
                     doc.CommandWillStart += OnCommandWillStart;
                     doc.CommandEnded += OnCommandEnded;
-                    doc.CommandCancelled += OnCommandEnded; 
+                    doc.CommandCancelled += OnCommandEnded;
                     _hookedDocs.Add(doc);
                     if (!_pendingWelcomeDocs.Contains(doc)) _pendingWelcomeDocs.Add(doc);
                 }
             }
         }
 
-        // 调用此方法前必须确保已经获得了 _docLock 锁
         private void DetachEventsUnsafe(Document doc)
         {
             try
@@ -204,13 +253,16 @@ namespace OpenCadIme
             try
             {
                 string globalCmd = e.GlobalCommandName;
-
                 if (!string.IsNullOrEmpty(globalCmd) && globalCmd.StartsWith("'")) return;
 
                 string cmd = globalCmd.Trim().TrimStart('_', '-', '\'', '.');
                 if (_chineseCommands.ContainsKey(cmd))
                 {
+                    // 1. 先对当前的主窗口切一波中文
                     ImeController.ForceChinese(GetCadMainWindowHandle());
+
+                    // 2. 狙击手睁眼：立刻挂上系统钩子，死死盯住接下来弹出的文字输入框
+                    StartFocusHook();
                 }
             }
             catch (System.Exception ex) { LogError("OnCommandWillStart", "命令拦截异常", ex); }
@@ -223,6 +275,9 @@ namespace OpenCadIme
             {
                 string globalCmd = e.GlobalCommandName;
                 if (!string.IsNullOrEmpty(globalCmd) && globalCmd.StartsWith("'")) return;
+
+                // 狙击手闭眼撤退：卸载系统钩子，不浪费一丝性能
+                StopFocusHook();
 
                 ImeController.ForceEnglish(GetCadMainWindowHandle());
             }
@@ -287,7 +342,7 @@ namespace OpenCadIme
             {
                 Document doc = null;
                 try { doc = Application.DocumentManager.MdiActiveDocument; } catch { }
-                
+
                 if (doc != null && doc.Editor != null)
                 {
                     string errorMsg = msg + (ex != null ? " | 异常: " + ex.Message : "");

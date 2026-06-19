@@ -20,7 +20,7 @@ namespace OpenCadIme
         }
 
         /// <summary>
-        /// 核心：执行安全的“查-切-验”逻辑 (V0.3 包含电源开关与中英文模式双重切换)
+        /// 核心：执行安全的“查-切-验”逻辑 (包含电源开关与状态掩码的精准控制)
         /// </summary>
         private static void SetImeStatus(bool targetStatus, IntPtr fallbackHwnd)
         {
@@ -38,41 +38,48 @@ namespace OpenCadIme
 
                 bool isSwitchSuccess = false;
 
-                // 1. 常规 API 尝试：模拟开关 + Shift 双重控制
+                // 1. 常规 API 尝试：模拟开关 + 位掩码多重组合控制
                 if (himc != IntPtr.Zero)
                 {
                     bool currentOpen = Win32API.ImmGetOpenStatus(himc);
                     uint conversion, sentence;
                     bool hasConversion = Win32API.ImmGetConversionStatus(himc, out conversion, out sentence);
 
-                    if (targetStatus) // ======== 目标：切换为中文 ========
+                    if (targetStatus) // ======== 目标：切换为【纯净中文模式】 ========
                     {
                         if (!currentOpen) Win32API.ImmSetOpenStatus(himc, true);
-                        
+
                         if (hasConversion)
                         {
-                            // 强制叠加 Native (中文) 标志：完美模拟按下 Shift 切到中文
-                            if ((conversion & Win32API.IME_CMODE_NATIVE) == 0)
+                            // 【精确组合】：叠加 Native(中文) 和 Symbol(中文标点)，同时强制剥离 FullShape(全角) 确保是半角输入
+                            uint targetMode = Win32API.IME_CMODE_NATIVE | Win32API.IME_CMODE_SYMBOL;
+                            uint newConversion = (conversion | targetMode) & ~Win32API.IME_CMODE_FULLSHAPE;
+
+                            if (conversion != newConversion)
                             {
-                                Win32API.ImmSetConversionStatus(himc, conversion | Win32API.IME_CMODE_NATIVE, sentence);
+                                Win32API.ImmSetConversionStatus(himc, newConversion, sentence);
                             }
                         }
                         isSwitchSuccess = true;
                     }
-                    else // ======== 目标：切换为英文 ========
+                    else // ======== 目标：切换为【纯净英文模式】 ========
                     {
                         if (hasConversion)
                         {
-                            // 强制剥离 Native 标志，转为 Alphanumeric (英文)：完美模拟按下 Shift 切到英文
-                            if ((conversion & Win32API.IME_CMODE_NATIVE) != 0)
+                            // 【三重剥离】：强制剥离 Native(中文)、FullShape(全角)、Symbol(中文标点)
+                            // 无论输入法之前是什么乱七八糟的状态，强行降级为 半角+纯字母+英文标点
+                            uint stripMask = Win32API.IME_CMODE_NATIVE | Win32API.IME_CMODE_FULLSHAPE | Win32API.IME_CMODE_SYMBOL;
+                            uint newConversion = conversion & ~stripMask;
+
+                            if (conversion != newConversion)
                             {
-                                Win32API.ImmSetConversionStatus(himc, conversion & ~Win32API.IME_CMODE_NATIVE, sentence);
+                                Win32API.ImmSetConversionStatus(himc, newConversion, sentence);
                             }
                         }
-                        
+
                         // 模式切完后，再把总开关关掉，实现双重保险
                         if (currentOpen) Win32API.ImmSetOpenStatus(himc, false);
-                        
+
                         isSwitchSuccess = true;
                     }
 
@@ -86,7 +93,7 @@ namespace OpenCadIme
                 // 2. 【终极降维打击】(专治 Windows 10 TSF 拦截及各种诡异第三方输入法)
                 if (!isSwitchSuccess)
                 {
-                    // 核心修复：向默认输入法窗口发消息，而不是向 CAD 控件本身发
+                    // 向默认输入法窗口发消息，而不是向 CAD 控件本身发
                     IntPtr imeWnd = Win32API.ImmGetDefaultIMEWnd(targetHwnd);
                     if (imeWnd == IntPtr.Zero && fallbackHwnd != IntPtr.Zero)
                     {

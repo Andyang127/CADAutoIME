@@ -24,8 +24,7 @@ namespace OpenCadIme
         [DllImport("imm32.dll")]
         public static extern bool ImmReleaseContext(IntPtr hwnd, IntPtr hIMC);
 
-        // --- 以下为 V0.3 新增：针对 Win10 与模式切换的终极防御 API ---
-        
+        // --- 针对 Win10 与模式切换的终极防御 API ---
         [DllImport("imm32.dll")]
         public static extern IntPtr ImmGetDefaultIMEWnd(IntPtr hWnd);
 
@@ -37,7 +36,7 @@ namespace OpenCadIme
 
 
         // ==========================================
-        // 2. USER32.dll (焦点与窗口穿透 API)
+        // 2. USER32.dll & KERNEL32 (焦点、穿透与系统级事件钩子 API)
         // ==========================================
         [DllImport("user32.dll")]
         public static extern IntPtr GetFocus();
@@ -64,6 +63,18 @@ namespace OpenCadIme
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
+        // --- 以下为 V0.3 新增：狙击手系统级事件监听核心 API ---
+        public delegate void WinEventDelegate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr hmodWinEventProc, WinEventDelegate lpfnWinEventProc, uint idProcess, uint idThread, uint dwFlags);
+
+        [DllImport("user32.dll")]
+        public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
+
+        [DllImport("kernel32.dll")]
+        public static extern uint GetCurrentProcessId();
+
 
         // ==========================================
         // 3. GDI32.dll (UI 圆角绘制)
@@ -83,14 +94,18 @@ namespace OpenCadIme
         public const int IMC_GETOPENSTATUS = 0x0005;
         public const int IMC_SETOPENSTATUS = 0x0006;
 
-        // 新增：中英文转换状态常量
         public const uint IME_CMODE_ALPHANUMERIC = 0x0000; // 纯英文模式
         public const uint IME_CMODE_NATIVE = 0x0001;       // 中文/本地化模式
+        public const uint IME_CMODE_FULLSHAPE = 0x0008;    // 全角模式
+        public const uint IME_CMODE_SYMBOL = 0x0400;       // 标点模式
 
         public const int GWL_EXSTYLE = -20;
         public const int WS_EX_TRANSPARENT = 0x20;
         public const int WS_EX_LAYERED = 0x80000;
 
+        // 新增：系统焦点事件类型标识常量
+        public const uint EVENT_OBJECT_FOCUS = 0x8005;
+        public const uint WINEVENT_OUTOFCONTEXT = 0x0000;
 
         // ==========================================
         // 5. 结构体定义 (Structs)

@@ -1,7 +1,8 @@
 #define MyAppName "CAD Auto IME"
-#define MyAppVersion "0.2"
+#define MyAppVersion "0.2.2"
 
 [Setup]
+VersionInfoVersion=0.2.2.0
 AppId={{9F8E2A1B-4C5D-6E7F-8A9B-0C1D2E3F4A5B}
 PrivilegesRequired=lowest
 AppName={#MyAppName}
