@@ -1,8 +1,8 @@
 #define MyAppName "CAD Auto IME"
-#define MyAppVersion "0.2.2"
+#define MyAppVersion "0.3 （阶段性 - 终版）"
 
 [Setup]
-VersionInfoVersion=0.2.2.0
+VersionInfoVersion=0.3.0.0
 AppId={{9F8E2A1B-4C5D-6E7F-8A9B-0C1D2E3F4A5B}
 PrivilegesRequired=lowest
 AppName={#MyAppName}
@@ -39,7 +39,7 @@ Source: "Logo.ico"; DestDir: "{app}"; DestName: "logo.ico"; Flags: ignoreversion
 [Icons]
 Name: "{group}\📖 CAD输入法助手-使用说明"; Filename: "{app}\Readme.html"; IconFilename: "{app}\logo.ico"
 Name: "{group}\🗑️ 卸载 CAD输入法助手"; Filename: "{uninstallexe}"
-Name: "{userdesktop}\[浅醉·墨语] CAD输入法助手"; Filename: "{app}\Readme.html"; IconFilename: "{app}\logo.ico"
+Name: "{userdesktop}\[浅醉·墨语] CAD输入法助手"; Filename: "{app}\Readme.html"; IconFilename: "{app}\logo.ico"; Comment: "版本：v {#MyAppVersion}";
 
 [Run]
 Filename: "{app}\Readme.html"; Flags: postinstall shellexec skipifsilent
@@ -125,7 +125,7 @@ begin
   if (not RegKeyExists(HKEY_CURRENT_USER, AcadKey)) and (not RegKeyExists(HKEY_LOCAL_MACHINE, AcadKey)) then
   begin
     MsgBox('⛔ 程序安装拦截！' + #13#10 + #13#10 +
-           '系统中未检测到任何 AutoCAD 环境。' + #13#10 +
+           '系统中未检测到任何 AutoCAD 环境。' + #13#10 + #13#10 +
            '本程序必须依赖 AutoCAD 运行，请【先安装 AutoCAD 并至少运行过一次】，然后再运行本安装程序！', mbError, MB_OK);
     Result := False;
     Exit;
@@ -157,9 +157,9 @@ begin
   if RegQueryStringValue(HKEY_CURRENT_USER, UninstKey, 'DisplayVersion', OldVersion) then
   begin
     case MsgBox('检测到系统已安装[CAD Auto IME] v' + OldVersion + '。' + #13#10 + #13#10 +
-              '请选择覆盖安装方式：' + #13#10 +
-              '✅ 是(Y)：保留我的自定义白名单配置（推荐）' + #13#10 +
-              '❌ 否(N)：彻底删除旧配置，全新安装' + #13#10 +
+              '请选择覆盖安装方式：' + #13#10 + #13#10 +
+              '✅ 是(Y)：保留我的自定义白名单配置（推荐）' + #13#10 + #13#10 +
+              '❌ 否(N)：彻底删除旧配置，全新安装' + #13#10 + #13#10 +
               '取消：退出安装', mbConfirmation, MB_YESNOCANCEL) of
       IDYES:
         begin
@@ -207,7 +207,7 @@ begin
 
   if IsAppRunning('acad.exe') then
   begin
-    if MsgBox('卸载程序检测到 [ AutoCAD ] 正在运行中。' + #13#10 +#13#10 +
+    if MsgBox('卸载程序检测到 [ AutoCAD ] 正在运行中。' + #13#10 +#13#10 + #13#10 +
               '为确保文件彻底清除，必须先关闭 AutoCAD。是否允许立即关闭？', mbConfirmation, MB_YESNO) = IDYES then
     begin
       ForceKillCAD();

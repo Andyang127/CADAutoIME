@@ -1,81 +1,74 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 
 namespace OpenCadIme
 {
-    /// <summary>
-    /// 配置管理器 - 兼容 CAD 2007-2027 全版本
-    /// </summary>
     public static class ConfigManager
     {
-        #region 常量定义
-        public const int ConfigVersion = 1;
+        public const int ConfigVersion = 3;
         private const string ConfigFileName = "AutoImeCommands.txt";
         private static readonly StringComparer CommandComparer = StringComparer.OrdinalIgnoreCase;
         private static readonly object _fileLock = new object();
-        #endregion
 
-        #region 默认命令定义
+        // 原生命令
         public static readonly string[] DefaultCommands = {
-            "DIM", "DIMLINEAR", "DIMALIGNED", "DIMANGULAR", "DIMRADIUS", "DIMDIAMETER",
-            "DIMORDINATE", "DIMBASELINE", "DIMCONTINUE",
-            "QLEADER", "LEADER", "MLEADER", "MLEADEREDIT", "MLEADERSTYLE", "MLEADERCONTENTEDIT",
-            "DIMEDIT", "DIMTEDIT", "TOLERANCE","CLASSICINSERT", "MINSERT",
-            "ATTDEF", "-ATTDEF", "ATTEDIT", "-ATTEDIT", "EATTEDIT", "BATTMAN", "ATTREDEF", "ATTSYNC",
-            "BLOCK", "-BLOCK", "BEDIT", "REFEDIT", "REFCLOSE", "WBLOCK", "INSERT", "-INSERT",
-            "BTABLE", "BACTION", "BPARAMETER", "BVISSTATES","TABLE", "TABLEDIT", "TABLEEXPORT", "FIELD",
-            "SAVE", "SAVEAS", "QSAVE", "EXPORT", "OPEN", "NEW", "PLOT", "PUBLISH","RENAME", "PURGE",
-            "LAYER", "CLASSICLAYER", "STYLE", "TABLESTYLE", "DIMSTYLE", "MLSTYLE", "GROUP",
-            "HATCH", "HATCHEDIT", "DBLCLKEDIT", "TOBJEDIT"
+            "TEXT", "DTEXT", "MTEXT", "-MTEXT", "MTEDIT", "DDEDIT", "FIND",
+            "ATTDEF", "-ATTDEF", "ATTEDIT", "-ATTEDIT", "EATTEDIT", "BATTMAN", "ATTREDEF",
+            "QLEADER", "LEADER", "MLEADER", "MLEADERCONTENTEDIT",
+            "TABLE", "TABLEDIT", "TOBJEDIT",
+            "SAVEAS", "EXPORT", "WBLOCK", "TABLEEXPORT", "OPEN", "NEW", "PUBLISH", "SAVE", "QSAVE",
+            "BLOCK", "-BLOCK", "BMAKE", "RENAME", "-RENAME", "STYLE", "LAYER", "-LAYER", "DIMSTYLE", "GROUP",
+            "PLOT", "PAGESETUP", "QSELECT", "FILTER", "HATCH", "BHATCH"
+        };
+        // 自定义命令
+        public static readonly string[] InitialPluginCommands = {
+            // ========== 天正系列（建筑/结构/机电标配） ==========
+            "DHWZ", "TMBZ", "ZFBZ", "YCBZ", "SYTM", "FJMC", "WDNAM",
+            "GJMC", "JSBZ", "ZWBZ", "SMBZ",
+            "TBLKNAME", "TKGM", "GGWZ",
+            "WZYS", "QXWZ",
+            // ========== 探索者 TSSD（结构行业标杆） ==========
+            "TS_SMZ", "TS_GJMC", "TS_JJS", "TS_HFBZ",
+            // ========== 源泉设计 YQArch ==========
+            "YQ_WZPL", "YQ_BZBJ", "YQ_BZPL", "YQ_YPZ", "YQ_MCBZ", "YQ_GJMC",
+            // ========== 海龙工具箱（室内设计标配） ==========
+            "DD", "AF", "AT", "AB", "ABB",
+            // ========== 常青藤辅助工具 ==========
+            "IVT_TextEdit", "IVT_TextSerial", "IVT_AttEdit", "IVT_BlockRename",
+            // ========== 燕秀工具箱（机械模具标配） ==========
+            "YX_CK", "YX_MJ", "YX_WT",
+            // ========== 通用LISP/全插件通用命令 ==========
+            "DHSHR", "DHBJ", "WZSHR", "TYBJ", "WZPL", "BZPL",
+            "YPZ", "XXBZH", "PMZ", "LMBZ", "PMMZ", "SBMC", "SMWZ"
         };
 
-        private static readonly string[] InitExtendCommands = {
-            "DHSHR", "DHBJ", "WZSHR", "TYBJ", "YPZ", "XXBZH", "BGHZH", "AAPMGZ",
-            "WZBH", "WZBG", "WZCD", "WZFH", "WZJX", "WZPL", "WZQX", "WZSZ", "WZTX", "WZZJ",
-            "BZBH", "BZCD", "BZFH", "BZJX", "BZPL", "BZQX", "BZSZ", "BZTX", "BZZJ",
-            "PMZ", "LMBZ", "PMMZ","GJBZ", "GJFH", "GJBH", "MSBZ", "JSBZ", "GJMC",
-            "GXBZ", "SLBZ", "SBMC", "SMWZ","FKBZ", "SGBZ", 
-            "YQ_WZBH", "YQ_WZPL", "YQ_WZTX", "YQ_WZBG", "YQ_BZBJ", "YQ_BZPL", "YQ_BZTX",
-            "YQ_BGHZ", "YQ_YPZ", "YQ_MCBZ", "YQ_GJMC",
-            "TS_GJBZ", "TS_GJBH", "TS_SMZ", "TS_JJS", "TS_GJMC", "TS_HFBZ"
-        };
-        #endregion
+        public static int LoadedCustomCount { get; private set; }
 
-        #region 公共属性
-        private static int _loadedCustomCount;
-        public static int LoadedCustomCount
-        {
-            get { return _loadedCustomCount; }
-            private set { _loadedCustomCount = value; }
-        }
-        #endregion
-
-        #region 配置文件路径
         private static string GetConfigFilePath()
         {
             try
             {
                 string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                 string pluginDir = Path.Combine(appData, "OpenCadIme");
-                if (!Directory.Exists(pluginDir))
-                {
-                    Directory.CreateDirectory(pluginDir);
-                }
+                if (!Directory.Exists(pluginDir)) Directory.CreateDirectory(pluginDir);
                 return Path.Combine(pluginDir, ConfigFileName);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("GetConfigFilePath 异常: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine("[CADAutoIME] 获取路径异常: " + ex.Message);
                 return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigFileName);
             }
         }
-        #endregion
 
-        #region 加载配置
+        public static bool IsSystemBuiltIn(string commandName)
+        {
+            string upperCmd = commandName.Trim().ToUpperInvariant();
+            return Array.IndexOf(DefaultCommands, upperCmd) >= 0;
+        }
+
         public static Dictionary<string, bool> LoadCommands()
         {
             Dictionary<string, bool> commands = new Dictionary<string, bool>(CommandComparer);
@@ -88,62 +81,40 @@ namespace OpenCadIme
                     string configFilePath = GetConfigFilePath();
                     if (File.Exists(configFilePath))
                     {
-                        LoadCommandsFromFile(configFilePath, commands);
+                        string[] lines = File.ReadAllLines(configFilePath, new UTF8Encoding(false));
+                        foreach (string line in lines)
+                        {
+                            string cleanLine = line.Trim('\uFEFF', '\u200B').Trim();
+                            if (string.IsNullOrEmpty(cleanLine) || cleanLine.StartsWith("//")) continue;
+
+                            string command = cleanLine.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries)[0].ToUpperInvariant();
+                            if (!string.IsNullOrEmpty(command) && !commands.ContainsKey(command))
+                            {
+                                commands[command] = true;
+                                LoadedCustomCount++;
+                            }
+                        }
                     }
                     else
                     {
-                        InitializeDefaultConfig(commands);
+                        List<string> initialFullList = new List<string>(DefaultCommands);
+                        initialFullList.AddRange(InitialPluginCommands);
+                        SaveAllCommandsUnsafe(initialFullList);
+                        foreach (var cmd in initialFullList)
+                        {
+                            commands[cmd.ToUpperInvariant()] = true;
+                            LoadedCustomCount++;
+                        }
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("LoadCommands 异常: " + ex.Message);
-                InitializeDefaultConfig(commands);
-            }
-
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine("[CADAutoIME] 加载异常: " + ex.Message); }
             return commands;
         }
 
-        private static void LoadCommandsFromFile(string configFilePath, Dictionary<string, bool> commands)
-        {
-            using (FileStream fs = new FileStream(configFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
-            {
-                string line;
-                while ((line = sr.ReadLine()) != null)
-                {
-                    string cleanLine = line.Trim('\uFEFF', '\u200B').Trim();
-                    if (string.IsNullOrEmpty(cleanLine)
-                        || cleanLine.StartsWith("#", StringComparison.Ordinal)
-                        || cleanLine.StartsWith("//", StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-                    commands[cleanLine] = true;
-                    LoadedCustomCount++;
-                }
-            }
-        }
-
-        private static void InitializeDefaultConfig(Dictionary<string, bool> commands)
-        {
-            List<string> initCommands = new List<string>(DefaultCommands);
-            initCommands.AddRange(InitExtendCommands);
-            SaveAllCommands(initCommands);
-
-            foreach (string cmd in initCommands)
-            {
-                commands[cmd] = true;
-            }
-        }
-        #endregion
-
-        #region 读取与保存
         public static List<string> ReadAllCommandsFromDisk()
         {
             List<string> list = new List<string>();
-
             try
             {
                 lock (_fileLock)
@@ -166,59 +137,46 @@ namespace OpenCadIme
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("ReadAllCommandsFromDisk 异常: " + ex.Message);
-            }
-
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine("[CADAutoIME] 读取磁盘异常: " + ex.Message); }
             return list;
         }
 
-        public static void SaveAllCommands(List<string> allCommands)
+        public static void SaveAllCommands(List<string> customCommands)
         {
-            if (allCommands == null) throw new ArgumentNullException("allCommands");
-
-            int maxRetries = 3;
-            for (int i = 0; i < maxRetries; i++)
+            if (customCommands == null) return;
+            for (int i = 0; i < 3; i++)
             {
                 try
                 {
-                    lock (_fileLock)
-                    {
-                        List<string> fileContent = new List<string>();
-                        fileContent.Add("// ============================================================");
-                        fileContent.Add("// CAD Auto IME 输入法自动切换 - 全量白名单配置 (版本 v" + ConfigVersion + ")");
-                        fileContent.Add("// ============================================================");
-                        fileContent.Add("// 你可以在此添加或删除需要保持中文输入法的命令（每行一个）");
-                        fileContent.Add("// 字母不区分大小写。以 // 或 # 开头的行会被视为注释");
-                        fileContent.Add("// 修改后请在 CAD 中运行 CUSTOMAUTOIME 命令重新加载");
-                        fileContent.Add("// ============================================================");
-                        fileContent.Add("");
-                        fileContent.AddRange(allCommands);
-
-                        string configPath = GetConfigFilePath();
-                        string tempPath = configPath + ".tmp";
-
-                        File.WriteAllLines(tempPath, fileContent.ToArray(), new UTF8Encoding(false));
-
-                        // 修复 V0.3: 摒弃 Delete + Move 的危险写法，改用安全的 Copy 覆盖机制
-                        File.Copy(tempPath, configPath, true);
-                        File.Delete(tempPath);
-                    }
+                    lock (_fileLock) { SaveAllCommandsUnsafe(customCommands); }
                     break;
                 }
-                catch (Exception ex)
-                {
-                    if (i == maxRetries - 1)
-                    {
-                        System.Windows.Forms.MessageBox.Show(
-                            "保存配置失败，请检查文件是否被其他 CAD 进程占用。\n\n错误详情：" + ex.Message,
-                            "保存错误", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                    }
-                    Thread.Sleep(200); // 避让其他进程
-                }
+                catch { Thread.Sleep(200); }
             }
         }
-        #endregion
+
+        private static void SaveAllCommandsUnsafe(List<string> commandsToWrite)
+        {
+            List<string> fileContent = new List<string>();
+            fileContent.Add("// ============================================================");
+            fileContent.Add("// CAD Auto IME 命令白名单配置");
+            fileContent.Add("// ============================================================");
+            fileContent.Add("// 提示：列表中包含系统核心文字命令与常用第三方外挂命令。");
+            fileContent.Add("// 您可以在此随意添加或删除。列表内的命令启动时，会自动切换为中文。");
+            fileContent.Add("// 强烈建议保留 MTEXT, TEXT 等系统内置命令。");
+            fileContent.Add("// ============================================================");
+            fileContent.Add("");
+
+            foreach (var cmd in commandsToWrite)
+            {
+                fileContent.Add(cmd.ToUpperInvariant());
+            }
+
+            string configPath = GetConfigFilePath();
+            string tempPath = configPath + ".tmp";
+            File.WriteAllLines(tempPath, fileContent.ToArray(), new UTF8Encoding(false));
+            File.Copy(tempPath, configPath, true);
+            File.Delete(tempPath);
+        }
     }
 }

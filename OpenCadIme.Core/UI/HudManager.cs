@@ -129,7 +129,7 @@ namespace OpenCadIme
                 table.SetColumnSpan(lblSlogan, 2);
 
                 System.Windows.Forms.Label lblOnceTip = new System.Windows.Forms.Label();
-                lblOnceTip.Text = "* 注：本欢迎视窗仅显示一次";
+                lblOnceTip.Text = "* 注：本提示只在第一配置CAD版本时显示一次";
                 lblOnceTip.AutoSize = true;
                 lblOnceTip.Font = _fontOnceTip;
                 lblOnceTip.ForeColor = Color.FromArgb(255, 82, 82);

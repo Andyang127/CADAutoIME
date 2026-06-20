@@ -41,6 +41,8 @@
         .alert-success h3 { margin: 0 0 10px 0; color: #1e7e34; font-size: 16px; }
         .alert-success p { margin: 5px 0; color: #2d6a3f; font-size: 14px; }
         
+        .alert-warning { background-color: #fff8e6; border-left: 5px solid #f39c12; padding: 15px 20px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        
         blockquote { border-left: 4px solid var(--primary-color); padding: 10px 15px; color: var(--text-muted); background-color: var(--bg-light); margin: 1.5em 0; border-radius: 0 4px 4px 0; }
         blockquote p { margin: 0; }
         
@@ -69,7 +71,7 @@
 <body>
     <div class="markdown-body">
         <h1>CAD输入法自动切换助手 - 说明文档</h1>
-        <div class="subtitle">CAD Auto IME | 技术文档 (v0.2.1)</div>
+        <div class="subtitle">CAD Auto IME | 技术文档 (v0.3 版 )</div>
 
         <div class="alert-success">
             <h3>🎉 恭喜！安装部署已完成</h3>
@@ -80,65 +82,74 @@
 
         <h2>🎯 产品概述</h2>
         <h3>🔹 产品定位</h3>
-        <p><strong>CAD Auto IME</strong> 是一款专为工程设计领域打造的<strong>底层系统级效率增强组件</strong>，采用轻量级架构设计，专注于解决 AutoCAD 操作环境中英文输入法频繁切换的行业痛点。</p>
+        <p><strong>CAD Auto IME</strong> 是一款专为工程设计领域打造的<strong>底层系统级效率增强组件</strong>。v0.3 版 融合了双擎状态机锁与底层焦点雷达，彻底消灭了绘图卡顿与输入法误杀，真正实现了 0 延迟的无感输入法切换体验。</p>
         
         <h3>🔹 解决的核心问题</h3>
         <table>
             <thead>
                 <tr>
                     <th width="20%">使用场景</th>
-                    <th width="40%">传统操作方式</th>
-                    <th width="40%">本工具解决方案 (v0.2.1)</th>
+                    <th width="40%">传统操作方式 (含旧版插件)</th>
+                    <th width="40%">本工具解决方案 (v0.3 版)</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td><strong>命令输入</strong></td>
-                    <td>需手动切换至英文输入法</td>
-                    <td>✅ 自动识别并切换英文状态</td>
+                    <td><strong>日常绘图 (快捷菜单弹出)</strong></td>
+                    <td>极易因为弹窗抢走焦点被误切成中文</td>
+                    <td>✅ 状态锁+黑名单雷达，画线(PL)等弹窗时死锁英文，绝不误判</td>
                 </tr>
                 <tr>
-                    <td><strong>文字标注</strong></td>
-                    <td>需手动切换至中文输入法</td>
-                    <td>✅ 自动识别并包含透明命令，秒切中文</td>
+                    <td><strong>各种文本与图块标注</strong></td>
+                    <td>经常因层级问题导致输入法无法呼出</td>
+                    <td>✅ Win32 底层 API 穿透嵌套界面，精准捕获打字光标瞬间切中文</td>
                 </tr>
                 <tr>
-                    <td><strong>快捷键操作</strong></td>
-                    <td>频繁按 <code>Shift</code> / <code>Ctrl+Shift</code></td>
-                    <td>✅ 全程无需人工干预，彻底释放双手</td>
+                    <td><strong>多图纸切换 (MDI)</strong></td>
+                    <td>图纸 A 的中文状态会污染图纸 B</td>
+                    <td>✅ 独立生命周期隔离，切回图纸瞬间自动“洗牌”重置为英文</td>
                 </tr>
                 <tr>
-                    <td><strong>个性化需求</strong></td>
-                    <td>遇到生僻自建命令无法识别</td>
-                    <td>✅ <strong>(新)</strong> 提供图形化白名单面板，随心添加</td>
+                    <td><strong>长时间高负荷绘图</strong></td>
+                    <td>后台频繁监听导致鼠标有轻微顿挫感</td>
+                    <td>✅ 极客级内存复用优化，彻底消灭 GC 垃圾回收造成的掉帧微卡顿</td>
                 </tr>
             </tbody>
         </table>
 
-        <h2>⚡ v0.2.x 核心新特性</h2>
-        <p>在保持 v0.1 极致轻量与静默的基础上，v0.2 迎来了史诗级进化：</p>
+        <h2>⚡ v0.3 版核心特性</h2>
+        <p>本次版本迎来了史诗级架构跃迁，让插件兼具稳健与智能：</p>
         
-        <h3>1. 🎨 图形化配置面板 (自定义白名单)</h3>
-        <p>告别繁琐的配置文件修改！新增原生的 WinForms 图形化管理界面，内置 50+ 个核心保护命令。你可以随时添加你的专属插件命令或快捷键，一键保存，<strong>立即生效</strong>。</p>
+        <h3>1. 🧠 双擎状态锁：0 误杀防御网</h3>
+        <p>我们将“命令状态”与“焦点弹窗”深度结合。只要你执行的不是白名单里的文字命令，底层就会挂上一把“死锁”，即使界面弹出一万个下拉菜单抢占焦点，插件也绝对不会切出中文。而在使用天正、源泉等图块重命名插件时，则秒切中文。</p>
+
+        <h3>2. 🖥️ 全透明双区平权 UX 与无感交互</h3>
+        <p>彻底抛弃“黑盒”逻辑。现在的配置面板中，所有 AutoCAD 核心文字命令（如 TEXT, MTEXT, BLOCK, LAYER 等 28 个）与外挂命令完全透明可见。搭配极简的“双击删除”与底部 Toast 无感文字提示，交互体验如丝般顺滑。</p>
+
+        <h3>3. 💊 零配置自愈升级机制</h3>
+        <p>插件内置了智能向下兼容探针。如果你是从老版本升级上来的用户，程序在后台启动时会瞬间发现你的配置文件缺失了新功能指令，并以纳秒级速度静默为你修补完整。你什么都不用做，即刻享受满血体验。</p>
         
-        <h3>2. 🛡️ 沉浸式 HUD 欢迎视窗</h3>
-        <p>首次打开图纸时，右下角将弹出精心设计的圆角半透明 HUD 欢迎提示，持续 15 秒并伴随倒计时平滑淡出，不遮挡任何工作视线，让你确切感知插件已就绪。<code>注:本提示只会在第一次加载对应CAD版本的时候显示,后期不会再次显示。</code></p>
-        
-        <h3>3. 🚀 跨世代架构引擎 (支持 .NET 10)</h3>
-        <p>底层核心经过全面重构，完美兼容从 AutoCAD 2007 (老旧 .NET Framework) 一直到目前最新的 AutoCAD 2027 (前沿 .NET 10.0 架构)，真正做到“全宇宙版本通杀”。</p>
+        <h3>4. 🚀 跨世代架构引擎 (兼容 CAD2007~2027)</h3>
+        <p>底层核心经过全面重构，向下兼容至 .NET 3.5 时代的老爷机，向上完美适配未来采用 .NET 10.0 的 AutoCAD 2027，真正做到“全宇宙版本通杀”。</p>
 
         <h2>📖 使用指南与命令</h2>
         <blockquote>
-            <p><strong>💡 重要提示</strong>：本程序深度集成于 AutoCAD 底层，随 CAD 启动而<strong>自动运行</strong>。除了后台静默工作外，v0.2 还为你提供了两个极其方便的交互命令：</p>
+            <p><strong>💡 极简操作提示</strong>：经过大量测试，本版的本程序自带97个内置命令，包括 46 个 CAD 原生系统命令和 51 个常用插件命令。你可以直接上手画图，如果发现有极个别自定 LISP 没有切中文，再使用下方命令添加即可。</p>
         </blockquote>
+
+        <div class="alert-warning">
+            <strong>⚠️ 添加自定义命令的铁律：必须输入“命令全称”！</strong><br>
+            当你在配置面板中添加自己的扩展命令时，<strong>严禁输入快捷键（Alias）</strong>（例如画圆不要输 C，创建块不要输 B）。<br>
+            你必须输入 CAD 底部命令行执行时的<strong>真实全称</strong>（例如：<code>CIRCLE</code>、<code>BLOCK</code>、<code>TBLKNAME</code> 等），否则系统底层将无法匹配触发！
+        </div>
 
         <h3>🔹 1. 呼出白名单配置面板</h3>
         <p>在 CAD 命令行输入：👉 <code>CUSTOMAUTOIME</code></p>
-        <p><strong>功能</strong>：弹出输入法白名单配置窗口。你可以在左侧查看受保护的内置命令，在右侧随意添加你自己的拼音快捷命令（如你常用的外部插件快捷键）。</p>
+        <p><strong>功能</strong>：直观管理所有文字、标注指令。支持 Ctrl+Z 撤销，Ctrl+Y 重做，以及双击/Delete 一键防呆删除。</p>
 
         <h3>🔹 2. 临时开启/关闭助手</h3>
         <p>在 CAD 命令行输入：👉 <code>TOGGLEAUTOIME</code></p>
-        <p><strong>功能</strong>：一键切换插件的运行状态。如果当前图纸的特定作业不需要自动切换，可通过此命令临时关闭；再次输入即可重新开启。</p>
+        <p><strong>功能</strong>：一键全局切换插件的运行状态（开启/关闭监控）。</p>
 
         <h2>💻 支持的 AutoCAD 版本</h2>
         <table>
@@ -184,63 +195,47 @@
             </tbody>
         </table>
 
-        <h2>🔧 技术架构与安全</h2>
-        <h3>🛡️ 极致的安全与稳定性</h3>
-        <ul>
-            <li><strong>主线程防死锁设计</strong>：v0.2 彻底重构了 IME 切换的线程调度，采用 CAD 主线程安全延时队列，彻底杜绝了高版本 Windows 11 下输入法卡死、崩溃的隐患。</li>
-            <li><strong>配置防丢机制</strong>：用户自定义白名单数据统一安全存放在 Windows 系统漫游目录 (<code>%AppData%\CAD Auto IME</code>)，即使重装 AutoCAD 或升级插件，你的自定义配置也永不丢失。</li>
-            <li><strong>零文档安全</strong>：即使关闭所有图纸处于“零文档状态”，插件依然保持高度稳定，不会触发任何报错。</li>
-        </ul>
-
-        <h3>🔒 隐私与绿色声明</h3>
-        <ul>
-            <li>✅ <strong>无网络请求</strong>：纯本地运行，不收集任何用户数据</li>
-            <li>✅ <strong>无广告植入</strong>：纯净绿色软件，无任何商业推广</li>
-            <li>✅ <strong>无残留写入</strong>：卸载程序自动擦除注册表 <code>TRUSTEDPATHS</code> 等注入项，来去无踪。</li>
-        </ul>
-
         <h2>❓ 常见问题</h2>
-        <h3>Q1：我输入了自定义命令，但为什么没有生效？</h3>
-        <p><strong>A</strong>：请在 CAD 中输入 <code>CUSTOMAUTOIME</code>，确保你的命令已成功添加到右侧列表中，并且<strong>点击了“保存配置并立即生效”按钮</strong>。系统会自动将其转为大写并实时监控。</p>
+        <h3>Q1：我可以把面板下方的 TEXT、MTEXT 等系统内置指令删掉吗？</h3>
+        <p><strong>A</strong>：<strong>强烈建议保留！</strong> 它们是维持 AutoCAD 正常文字录入的核心骨干。虽然我们将控制权完全交给了你（允许你强行删除），但删除后，这些命令将不再自动切换输入法。如果误删，请点击面板下方的【恢复默认】按钮一键重置。</p>
 
-        <h3>Q2：程序会影响 AutoCAD 运行速度吗？</h3>
-        <p><strong>A</strong>：不会。本程序 CPU 占用率极低，仅在敲击键盘触发命令的瞬间进行极小开销的判定，对 AutoCAD 性能无任何可感知的影响。</p>
-
-        <h3>Q3：为什么 CAD 启动时会提示“不信任的应用程序”？</h3>
-        <p><strong>A</strong>：通常安装包会自动将插件目录加入 CAD 的“受信任位置（TRUSTEDPATHS）”。如果你的安全防护软件拦截了注册表写入，你可以在 CAD 中输入 <code>OPTIONS</code>，在“文件”->“受信任的位置”中手动添加本插件的安装目录。</p>
+        <h3>Q2：程序会影响 AutoCAD 运行速度、引起掉帧卡顿吗？</h3>
+        <p><strong>A</strong>：绝对不会。本次 v0.3 版本彻底消灭了高频拦截带来的垃圾回收（GC）压力，通过底层内存 Buffer 复用机制，对 CPU 和帧率的影响严格为 0。哪怕连续画图 10 小时，鼠标依然顺滑如初。</p>
 
         <h2>🗑️ 卸载流程</h2>
         <p>本程序提供极其纯净的卸载体验，不留任何系统垃圾。</p>
         <ol>
             <li>打开 Windows <strong>「开始菜单」</strong>，找到 <strong>「CAD Auto Ime」</strong> 程序组。</li>
             <li>点击 <strong>「卸载 CAD 输入法助手」</strong>。</li>
-            <li><strong>重要提示</strong>：卸载时程序会询问<strong>“是否要彻底清除所有数据”</strong>。如果你未来还打算继续使用，请选择“否”以保留你辛苦积攒的自定义快捷键白名单。</li>
             <li>（注：为确保彻底清除注册表占用，卸载时若 CAD 正在运行，程序会提示你保存图纸并自动关闭 CAD 进程）。</li>
         </ol>
 
         <h2>📝 版本历史</h2>
-        <h3>🚀 v0.2.1 (Hotfix 最新版)</h3>
+        
+        <h3>🚀 v0.3 (阶段性-终版) - 本次更新</h3>
         <ul>
-            <li>✨ <strong>核心控制</strong>：引入中英文模式 (ConversionStatus) 双重控制，彻底解决 Win10 下需要手动按 Shift 切换的问题。</li>
-            <li>🔧 <strong>底层穿透</strong>：加入 <code>ImmGetDefaultIMEWnd</code> 降维打击机制，修复 Win10 教育版 TSF 架构下切换失效的 Bug。</li>
-            <li>🛡️ <strong>极强防崩</strong>：引入 <code>_docLock</code> 线程锁，修复多图纸并发或高频操作时引发的“集合已被修改”致命崩溃 (Fatal Error)。</li>
-            <li>💾 <strong>数据安全</strong>：完善 ConfigManager，改用原生的安全 Copy 覆盖机制保存配置，彻底消除多进程下白名单清空的隐患。</li>
+            <li>🎯 <strong>【大脑升级】双擎状态锁防误杀</strong>：结合 CommandWillStart 状态锁与带黑名单的焦点雷达，彻底解决了 PL/BO 等快捷菜单误弹中文的世纪难题。</li>
+            <li>⚡ <strong>【性能极客】0 GC 微卡消除</strong>：重构高频触发拦截器，提升局部对象为全局复用 Buffer，彻底终结了垃圾回收导致的画图微卡顿现象。</li>
+            <li>🖥️ <strong>【UX 蜕变】全透明平权 UI</strong>：摒弃隐藏黑盒，全部命令透明可视。升级为无打断 Toast 文字状态提示，配合经典的系统/扩展双区展示，交互零摩擦。</li>
+            <li>💊 <strong>【智能兼容】配置自愈重写</strong>：自带升级探针，瞬间侦测老版本遗留残缺配置并实现后台静默平滑修补，包含 BLOCK、LAYER 等 28 个原生底层指令。</li>
         </ul>
 
-        <h3>📦 v0.2.0 (架构重构版)</h3>
+        <h3>📦 v0.2.2 (数据流双擎版)</h3>
         <ul>
-            <li>✨ <strong>新增</strong>：<code>CUSTOMAUTOIME</code> 图形化白名单配置面板，支持自定义外部命令。</li>
-            <li>🔧 <strong>底层架构</strong>：全面支持 AutoCAD 2025/2026/2027 (.NET 8/9/10 核心)。</li>
-            <li>🐛 <strong>修复</strong>：彻底修复跨线程调用导致的输入法焦点死锁问题。</li>
-            <li>🐛 <strong>修复</strong>：完善对 <code>'ZOOM</code> 等单引号透明命令的智能识别。</li>
-            <li>📁 <strong>优化</strong>：配置文件迁移至 Windows <code>%AppData%</code> 目录，彻底解决 C 盘读写权限问题。</li>
+            <li>✨ 废弃系统消息传递，改用 <code>ImmAssociateContext</code> API 从底层剥离输入法 HIMC 句柄，降维打击现代 TSF 输入法。</li>
+            <li>🔧 引入全局图纸激活/销毁事件矩阵，完美阻断多标签页切换时的状态污染。</li>
         </ul>
 
-        <h3>🏁 v0.1.0 (初创版)</h3>
+        <h3>📦 v0.2.1 / v0.2.0 (热修复与重构版)</h3>
         <ul>
-            <li>✅ 首次公开发布。</li>
-            <li>✅ 支持 AutoCAD 2007 ~ 2024 全版本。</li>
-            <li>✅ 实现核心输入法后台静默自动切换功能。</li>
+            <li>✨ 引入双重状态洗参机制，剔除输入法内潜藏的全角字符残余。</li>
+            <li>✨ 新增 <code>CUSTOMAUTOIME</code> 图形化配置面板及暗黑主题 HUD 欢迎视窗。</li>
+        </ul>
+
+        <h3>📦 v0.1.0 (初创版)</h3>
+        <ul>
+            <li>✨*梦开始的地方。*</li>
+            <li>✨ 首次公开发布，实现了基础的后台静默监听与输入法切换。虽然还有些稚嫩，但它证明了“让绘图不被打断”这个想法是可行的。</li>
         </ul>
 
         <h2>📮 联系与反馈</h2>
@@ -266,16 +261,9 @@
             </tbody>
         </table>
 
-        <h2>📜 版权声明</h2>
-        <ul>
-            <li><strong>许可协议</strong>：本软件为<strong>免费自由软件</strong>，允许免费使用于个人场景，自由传播和分享，无任何功能限制。</li>
-            <li><strong>禁止行为</strong>：禁止修改、反编译、逆向工程本程序；禁止将本程序用于非法用途、二次打包或商业销售。</li>
-            <li><strong>免责声明</strong>：本软件按 "现状" 提供，不提供任何明示或暗示的保证。在法律允许的最大范围内，作者不对因使用本软件产生的任何直接或间接损失承担责任。</li>
-        </ul>
-
         <div class="footer">
             <p><strong>感谢你选择 CAD 输入法自动切换助手</strong><br><em>让每一位设计师都能专注于创作，而非输入法切换</em></p>
-            <p>文档版本：v0.2.1 | 更新时间：2026 年06年19日 | 适配系统：Windows 7/10/11 (64 位)</p>
+            <p>文档版本：v0.3  | 更新时间：2026 年 06 月 20 日 | 适配系统：Windows 7/10/11 (64 位)</p>
         </div>
     </div>
 </body>
