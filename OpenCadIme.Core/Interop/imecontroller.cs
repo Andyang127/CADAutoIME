@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-
 namespace OpenCadIme
 {
     /// <summary>
@@ -14,7 +13,6 @@ namespace OpenCadIme
             {
                 IntPtr targetHwnd = GetRealFocusWindow(cadMainWindowHwnd);
                 if (targetHwnd == IntPtr.Zero) targetHwnd = cadMainWindowHwnd;
-
                 IntPtr activeHimc = Win32API.ImmGetContext(targetHwnd);
                 if (activeHimc != IntPtr.Zero)
                 {
@@ -23,7 +21,6 @@ namespace OpenCadIme
                     {
                         Win32API.ImmSetOpenStatus(activeHimc, false);
                     }
-
                     // 2. 强制锁入纯英文模式
                     uint conversion, sentence;
                     if (Win32API.ImmGetConversionStatus(activeHimc, out conversion, out sentence))
@@ -39,18 +36,16 @@ namespace OpenCadIme
             }
             catch (Exception ex)
             {
-                // 将底层的屏蔽异常暴露出来，能在 VS 的“输出”窗口中直接看到
+                // 将底层的屏蔽异常暴露出来，能在 VS 的"输出"窗口中直接看到
                 System.Diagnostics.Debug.WriteLine("[CADAutoIME-ImeController] ForceEnglish 执行异常: " + ex.Message + "\n" + ex.StackTrace);
             }
         }
-
         public static void ForceChinese(IntPtr cadMainWindowHwnd)
         {
             try
             {
                 IntPtr targetHwnd = GetRealFocusWindow(cadMainWindowHwnd);
                 if (targetHwnd == IntPtr.Zero) targetHwnd = cadMainWindowHwnd;
-
                 IntPtr activeHimc = Win32API.ImmGetContext(targetHwnd);
                 if (activeHimc != IntPtr.Zero)
                 {
@@ -59,14 +54,15 @@ namespace OpenCadIme
                     {
                         Win32API.ImmSetOpenStatus(activeHimc, true);
                     }
-
                     // 2. 清洗全角，强注中文标点和本地模式
                     uint conversion, sentence;
                     if (Win32API.ImmGetConversionStatus(activeHimc, out conversion, out sentence))
                     {
+                        // 目标模式：本地语言(中文) + 符号标点
                         uint targetMode = Win32API.IME_CMODE_NATIVE | Win32API.IME_CMODE_SYMBOL;
-                        uint newConversion = (conversion | targetMode) & ~Win32API.IME_CMODE_FULLSHAPE;
-
+                        // 先清除所有可能干扰的模式位（全角、罗马字、片假名等），再设置目标模式
+                        // 确保除了 NATIVE 和 SYMBOL 之外的其他模式位都被清除
+                        uint newConversion = targetMode;
                         if (conversion != newConversion)
                         {
                             Win32API.ImmSetConversionStatus(activeHimc, newConversion, sentence);
@@ -80,7 +76,6 @@ namespace OpenCadIme
                 System.Diagnostics.Debug.WriteLine("[CADAutoIME-ImeController] ForceChinese 执行异常: " + ex.Message + "\n" + ex.StackTrace);
             }
         }
-
         private static IntPtr GetRealFocusWindow(IntPtr fallbackHwnd)
         {
             try
@@ -92,7 +87,6 @@ namespace OpenCadIme
                     uint threadId = Win32API.GetWindowThreadProcessId(foregroundWindow, out dummyPid);
                     Win32API.GUITHREADINFO guiInfo = new Win32API.GUITHREADINFO();
                     guiInfo.cbSize = Marshal.SizeOf(guiInfo);
-
                     if (Win32API.GetGUIThreadInfo(threadId, ref guiInfo) && guiInfo.hwndFocus != IntPtr.Zero)
                     {
                         return guiInfo.hwndFocus;
@@ -100,7 +94,6 @@ namespace OpenCadIme
                 }
                 IntPtr focus = Win32API.GetFocus();
                 if (focus != IntPtr.Zero) return focus;
-
                 return fallbackHwnd;
             }
             catch (Exception ex)

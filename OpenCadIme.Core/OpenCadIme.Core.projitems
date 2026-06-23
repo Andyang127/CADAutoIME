@@ -9,6 +9,7 @@
     <Import_RootNamespace>OpenCadIme.Core</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AppConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\imecontroller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)pluginmain.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ConfigForm.cs" />

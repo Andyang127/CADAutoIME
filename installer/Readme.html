@@ -1,270 +1,920 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, minimal-ui">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CAD输入法自动切换助手 - 说明文档</title>
-    <style type="text/css">
+    <!-- 引入 FontAwesome 图标库，提升视觉质感 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
         :root {
-            --primary-color: #009688;
-            --text-main: #2c3e50;
-            --text-muted: #666;
-            --bg-light: #f8fcfb;
-            --border-color: #e1e4e8;
+            --primary-color: #1e293b;       /* 现代深蓝/ slate 800 */
+            --primary-light: #3b82f6;      /* 科技蓝 / blue 500 */
+            --accent-color: #f97316;       /* 活力橙 / orange 500 */
+            --accent-light: #fff7ed;       /* 浅橙底 / orange 50 */
+            --bg-color: #f8fafc;           /* 舒适背景 / slate 50 */
+            --text-color: #334155;         /* 主文本 / slate 700 */
+            --text-dark: #0f172a;          /* 标题文本 / slate 900 */
+            --border-color: #e2e8f0;       /* 边框色 / slate 200 */
+            --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 8px -1px rgba(15, 23, 42, 0.04);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            line-height: 1.8;
-            color: #333;
-            background-color: #f4f5f7;
-            margin: 0;
-            padding: 20px;
-        }
-        .markdown-body {
+
+        * {
             box-sizing: border-box;
-            min-width: 200px;
-            max-width: 880px;
-            margin: 0 auto;
-            padding: 40px;
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            scroll-behavior: smooth;
         }
-        h1, h2, h3, h4 { color: var(--text-main); margin-top: 1.5em; margin-bottom: 0.8em; font-weight: 600; }
-        h1 { font-size: 28px; text-align: center; border-bottom: 2px solid var(--primary-color); padding-bottom: 15px; margin-top: 0; }
-        h2 { font-size: 22px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; color: var(--primary-color); }
-        h3 { font-size: 18px; }
-        .subtitle { text-align: center; color: var(--text-muted); font-size: 15px; margin-top: -10px; margin-bottom: 30px; letter-spacing: 1px; }
-        
-        /* 提示框样式 */
-        .alert-success { background-color: #e6f7e9; border-left: 5px solid #28a745; padding: 15px 20px; margin: 20px 0; border-radius: 0 4px 4px 0; }
-        .alert-success h3 { margin: 0 0 10px 0; color: #1e7e34; font-size: 16px; }
-        .alert-success p { margin: 5px 0; color: #2d6a3f; font-size: 14px; }
-        
-        .alert-warning { background-color: #fff8e6; border-left: 5px solid #f39c12; padding: 15px 20px; margin: 20px 0; border-radius: 0 4px 4px 0; }
-        
-        blockquote { border-left: 4px solid var(--primary-color); padding: 10px 15px; color: var(--text-muted); background-color: var(--bg-light); margin: 1.5em 0; border-radius: 0 4px 4px 0; }
-        blockquote p { margin: 0; }
-        
-        /* 代码样式 */
-        code { font-family: Consolas, monospace; background-color: #f6f8fa; padding: 3px 6px; border-radius: 4px; color: #e53245; font-size: 14px; font-weight: bold; }
-        
-        /* 表格样式 */
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 15px; }
-        th, td { border: 1px solid var(--border-color); padding: 12px 15px; text-align: left; }
-        th { background-color: var(--primary-color); color: white; font-weight: 500; }
-        tr:nth-child(even) { background-color: #fafafa; }
-        tr:hover { background-color: var(--bg-light); }
-        
-        /* 列表样式 */
-        ul, ol { padding-left: 25px; }
-        li { margin-bottom: 8px; }
-        
-        hr { border: 0; border-top: 1px solid var(--border-color); margin: 30px 0; }
-        a { color: #0366d6; text-decoration: none; font-weight: 500; }
-        a:hover { text-decoration: underline; color: #0056b3; }
-        
-        .footer { text-align: center; color: #999; font-size: 13px; margin-top: 40px; border-top: 1px dashed #eee; padding-top: 20px; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Microsoft YaHei", sans-serif;
+            line-height: 1.7;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .wrapper {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            gap: 30px;
+        }
+
+        /* 侧边导航 */
+        .sidebar {
+            width: 260px;
+            position: sticky;
+            top: 40px;
+            height: fit-content;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .sidebar h4 {
+            margin: 0 0 16px 0;
+            color: var(--text-dark);
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar h4 i {
+            color: var(--primary-light);
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sidebar a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: var(--transition);
+        }
+
+        .sidebar a:hover {
+            background-color: #f1f5f9;
+            color: var(--primary-light);
+            padding-left: 16px;
+        }
+
+        /* 主体内容容器 */
+        .container {
+            flex: 1;
+            background: #ffffff;
+            padding: 50px;
+            box-shadow: var(--card-shadow);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            max-width: 900px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .brand-badge {
+            background: linear-gradient(135deg, var(--primary-light), #2563eb);
+            color: white;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            color: var(--text-dark);
+            margin: 0 0 10px 0;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        header p {
+            margin: 0;
+            color: #64748b;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .highlight {
+            background: linear-gradient(to right, var(--accent-light), #fffaf5);
+            padding: 24px;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-color);
+            margin: 30px 0;
+            box-shadow: 0 2px 8px rgba(230, 126, 34, 0.05);
+        }
+
+        .highlight h3 {
+            color: var(--accent-color);
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .highlight p {
+            margin: 0 0 16px 0;
+            font-size: 14px;
+            color: #475569;
+        }
+
+        .highlight ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+
+        .highlight li {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #475569;
+        }
+
+        .highlight strong {
+            color: var(--text-dark);
+        }
+
+        h2 {
+            color: var(--text-dark);
+            margin-top: 50px;
+            margin-bottom: 24px;
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        h2 i {
+            color: var(--accent-color);
+            font-size: 22px;
+        }
+
+        h3 {
+            color: var(--text-dark);
+            margin-top: 32px;
+            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        h3 i {
+            color: var(--primary-light);
+            font-size: 16px;
+        }
+
+        p {
+            margin-top: 0;
+            margin-bottom: 16px;
+            color: var(--text-color);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            margin: 24px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: var(--text-dark);
+            font-weight: 600;
+            padding: 14px 18px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-color);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        /* 标签与徽章样式 */
+        .badge {
+            background-color: #dcfce7;
+            color: #166534;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-update {
+            background-color: #dbeafe;
+            color: #1e40af;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .command-card {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            position: relative;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .command-text {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .command-text span.prefix {
+            color: #64748b;
+            user-select: none;
+        }
+
+        .command-text code.actual-cmd {
+            color: #38bdf8;
+            background: transparent;
+            padding: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .copy-btn:hover {
+            color: #fff;
+            background-color: #334155;
+            border-color: #475569;
+        }
+
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+
+        .tip-box {
+            background-color: #eff6ff;
+            border-left: 4px solid var(--primary-light);
+            padding: 16px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        .tip-box strong {
+            color: var(--primary-color);
+        }
+
+        .warn-box {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 16px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        .warn-box strong {
+            color: #991b1b;
+        }
+
+        code {
+            background-color: #f1f5f9;
+            color: #e11d48;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 13px;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 24px;
+            margin: 30px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 5px;
+            bottom: 8px;
+            width: 2px;
+            background-color: var(--border-color);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .timeline-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            top: 4px;
+            left: -24px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--primary-light);
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            z-index: 1;
+        }
+
+        .timeline-item.active .timeline-marker {
+            background-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+        }
+
+        .timeline-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .timeline-content {
+            font-size: 14px;
+            background-color: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .timeline-content ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .timeline-content li {
+            margin-bottom: 8px;
+        }
+
+        .timeline-content li:last-child {
+            margin-bottom: 0;
+        }
+
+        .steps {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+            counter-reset: step-counter;
+        }
+
+        .steps li {
+            position: relative;
+            padding-left: 44px;
+            margin-bottom: 20px;
+        }
+
+        .steps li::before {
+            content: counter(step-counter);
+            counter-increment: step-counter;
+            position: absolute;
+            top: 2px;
+            left: 0;
+            width: 28px;
+            height: 28px;
+            background-color: var(--primary-light);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        /* 联系方式定制表格 */
+        .contact-table {
+            border: none;
+            background-color: #f8fafc;
+            border-radius: 12px;
+        }
+
+        .contact-table td {
+            border: none;
+            padding: 16px 20px;
+        }
+
+        .contact-table tr:not(:last-child) td {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .contact-table a {
+            color: var(--primary-light);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .contact-table a:hover {
+            text-decoration: underline;
+        }
+
+        /* 页脚 */
+        .footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .footer p {
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 1024px) {
+            .wrapper {
+                flex-direction: column;
+                padding: 20px;
+            }
+            .sidebar {
+                width: 100%;
+                position: relative;
+                top: 0;
+                margin-bottom: 20px;
+            }
+            .sidebar ul {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            .sidebar a {
+                padding: 6px 12px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 24px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            h2 {
+                font-size: 20px;
+            }
+            .sidebar ul {
+                flex-direction: column;
+                width: 100%;
+            }
+            .sidebar a {
+                width: 100%;
+            }
+        }
     </style>
 </head>
-
 <body>
-    <div class="markdown-body">
-        <h1>CAD输入法自动切换助手 - 说明文档</h1>
-        <div class="subtitle">CAD Auto IME | 技术文档 (v0.3 版 )</div>
 
-        <div class="alert-success">
-            <h3>🎉 恭喜！安装部署已完成</h3>
-            <p><strong>系统提示</strong>：CAD 输入法自动切换助手底层运行库已成功部署至你的计算机系统。</p>
-            <p>📌 <strong>安装顺序防呆提示</strong>：本插件属于底层注册表注入组件。请务必<strong>先安装并运行过至少一次 AutoCAD</strong>，然后再安装本插件。若你重装或升级了 AutoCAD，请将本插件卸载后重新安装一次，以便重新写入加载引导。</p>
-            <p>📌 <strong>桌面快捷方式</strong>：仅为你方便查阅本说明文档而创建，可根据个人使用习惯随时删除，<strong>绝不影响程序核心功能的正常后台运行</strong>。</p>
-        </div>
-
-        <h2>🎯 产品概述</h2>
-        <h3>🔹 产品定位</h3>
-        <p><strong>CAD Auto IME</strong> 是一款专为工程设计领域打造的<strong>底层系统级效率增强组件</strong>。v0.3 版 融合了双擎状态机锁与底层焦点雷达，彻底消灭了绘图卡顿与输入法误杀，真正实现了 0 延迟的无感输入法切换体验。</p>
-        
-        <h3>🔹 解决的核心问题</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th width="20%">使用场景</th>
-                    <th width="40%">传统操作方式 (含旧版插件)</th>
-                    <th width="40%">本工具解决方案 (v0.3 版)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>日常绘图 (快捷菜单弹出)</strong></td>
-                    <td>极易因为弹窗抢走焦点被误切成中文</td>
-                    <td>✅ 状态锁+黑名单雷达，画线(PL)等弹窗时死锁英文，绝不误判</td>
-                </tr>
-                <tr>
-                    <td><strong>各种文本与图块标注</strong></td>
-                    <td>经常因层级问题导致输入法无法呼出</td>
-                    <td>✅ Win32 底层 API 穿透嵌套界面，精准捕获打字光标瞬间切中文</td>
-                </tr>
-                <tr>
-                    <td><strong>多图纸切换 (MDI)</strong></td>
-                    <td>图纸 A 的中文状态会污染图纸 B</td>
-                    <td>✅ 独立生命周期隔离，切回图纸瞬间自动“洗牌”重置为英文</td>
-                </tr>
-                <tr>
-                    <td><strong>长时间高负荷绘图</strong></td>
-                    <td>后台频繁监听导致鼠标有轻微顿挫感</td>
-                    <td>✅ 极客级内存复用优化，彻底消灭 GC 垃圾回收造成的掉帧微卡顿</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <h2>⚡ v0.3 版核心特性</h2>
-        <p>本次版本迎来了史诗级架构跃迁，让插件兼具稳健与智能：</p>
-        
-        <h3>1. 🧠 双擎状态锁：0 误杀防御网</h3>
-        <p>我们将“命令状态”与“焦点弹窗”深度结合。只要你执行的不是白名单里的文字命令，底层就会挂上一把“死锁”，即使界面弹出一万个下拉菜单抢占焦点，插件也绝对不会切出中文。而在使用天正、源泉等图块重命名插件时，则秒切中文。</p>
-
-        <h3>2. 🖥️ 全透明双区平权 UX 与无感交互</h3>
-        <p>彻底抛弃“黑盒”逻辑。现在的配置面板中，所有 AutoCAD 核心文字命令（如 TEXT, MTEXT, BLOCK, LAYER 等 28 个）与外挂命令完全透明可见。搭配极简的“双击删除”与底部 Toast 无感文字提示，交互体验如丝般顺滑。</p>
-
-        <h3>3. 💊 零配置自愈升级机制</h3>
-        <p>插件内置了智能向下兼容探针。如果你是从老版本升级上来的用户，程序在后台启动时会瞬间发现你的配置文件缺失了新功能指令，并以纳秒级速度静默为你修补完整。你什么都不用做，即刻享受满血体验。</p>
-        
-        <h3>4. 🚀 跨世代架构引擎 (兼容 CAD2007~2027)</h3>
-        <p>底层核心经过全面重构，向下兼容至 .NET 3.5 时代的老爷机，向上完美适配未来采用 .NET 10.0 的 AutoCAD 2027，真正做到“全宇宙版本通杀”。</p>
-
-        <h2>📖 使用指南与命令</h2>
-        <blockquote>
-            <p><strong>💡 极简操作提示</strong>：经过大量测试，本版的本程序自带97个内置命令，包括 46 个 CAD 原生系统命令和 51 个常用插件命令。你可以直接上手画图，如果发现有极个别自定 LISP 没有切中文，再使用下方命令添加即可。</p>
-        </blockquote>
-
-        <div class="alert-warning">
-            <strong>⚠️ 添加自定义命令的铁律：必须输入“命令全称”！</strong><br>
-            当你在配置面板中添加自己的扩展命令时，<strong>严禁输入快捷键（Alias）</strong>（例如画圆不要输 C，创建块不要输 B）。<br>
-            你必须输入 CAD 底部命令行执行时的<strong>真实全称</strong>（例如：<code>CIRCLE</code>、<code>BLOCK</code>、<code>TBLKNAME</code> 等），否则系统底层将无法匹配触发！
-        </div>
-
-        <h3>🔹 1. 呼出白名单配置面板</h3>
-        <p>在 CAD 命令行输入：👉 <code>CUSTOMAUTOIME</code></p>
-        <p><strong>功能</strong>：直观管理所有文字、标注指令。支持 Ctrl+Z 撤销，Ctrl+Y 重做，以及双击/Delete 一键防呆删除。</p>
-
-        <h3>🔹 2. 临时开启/关闭助手</h3>
-        <p>在 CAD 命令行输入：👉 <code>TOGGLEAUTOIME</code></p>
-        <p><strong>功能</strong>：一键全局切换插件的运行状态（开启/关闭监控）。</p>
-
-        <h2>💻 支持的 AutoCAD 版本</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>版本代号</th>
-                    <th>官方版本</th>
-                    <th>架构/框架要求</th>
-                    <th>支持状态</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>AutoCAD 2007~2014</strong></td>
-                    <td>R17.0 ~ R19.1</td>
-                    <td>32/64 位 (.NET 2~4)</td>
-                    <td>✅ 完全支持</td>
-                </tr>
-                <tr>
-                    <td><strong>AutoCAD 2015~2024</strong></td>
-                    <td>R20.0 ~ R24.3</td>
-                    <td>64 位 (.NET 4.x)</td>
-                    <td>✅ 完全支持</td>
-                </tr>
-                <tr>
-                    <td><strong>AutoCAD 2025</strong></td>
-                    <td>R25.0</td>
-                    <td>64 位 (.NET 8.0)</td>
-                    <td>✅ <strong>全面适配</strong></td>
-                </tr>
-                <tr>
-                    <td><strong>AutoCAD 2026</strong></td>
-                    <td>R25.1</td>
-                    <td>64 位 (.NET 9.0)</td>
-                    <td>✅ <strong>全面适配</strong></td>
-                </tr>
-                <tr>
-                    <td><strong>AutoCAD 2027</strong></td>
-                    <td>R26.0</td>
-                    <td>64 位 (.NET 10.0)</td>
-                    <td>✅ <strong>前瞻性支持</strong></td>
-                </tr>
-            </tbody>
-        </table>
-
-        <h2>❓ 常见问题</h2>
-        <h3>Q1：我可以把面板下方的 TEXT、MTEXT 等系统内置指令删掉吗？</h3>
-        <p><strong>A</strong>：<strong>强烈建议保留！</strong> 它们是维持 AutoCAD 正常文字录入的核心骨干。虽然我们将控制权完全交给了你（允许你强行删除），但删除后，这些命令将不再自动切换输入法。如果误删，请点击面板下方的【恢复默认】按钮一键重置。</p>
-
-        <h3>Q2：程序会影响 AutoCAD 运行速度、引起掉帧卡顿吗？</h3>
-        <p><strong>A</strong>：绝对不会。本次 v0.3 版本彻底消灭了高频拦截带来的垃圾回收（GC）压力，通过底层内存 Buffer 复用机制，对 CPU 和帧率的影响严格为 0。哪怕连续画图 10 小时，鼠标依然顺滑如初。</p>
-
-        <h2>🗑️ 卸载流程</h2>
-        <p>本程序提供极其纯净的卸载体验，不留任何系统垃圾。</p>
-        <ol>
-            <li>打开 Windows <strong>「开始菜单」</strong>，找到 <strong>「CAD Auto Ime」</strong> 程序组。</li>
-            <li>点击 <strong>「卸载 CAD 输入法助手」</strong>。</li>
-            <li>（注：为确保彻底清除注册表占用，卸载时若 CAD 正在运行，程序会提示你保存图纸并自动关闭 CAD 进程）。</li>
-        </ol>
-
-        <h2>📝 版本历史</h2>
-        
-        <h3>🚀 v0.3 (阶段性-终版) - 本次更新</h3>
+<div class="wrapper">
+    <aside class="sidebar">
+        <h4><i class="fa-solid fa-compass"></i> 文档导航</h4>
         <ul>
-            <li>🎯 <strong>【大脑升级】双擎状态锁防误杀</strong>：结合 CommandWillStart 状态锁与带黑名单的焦点雷达，彻底解决了 PL/BO 等快捷菜单误弹中文的世纪难题。</li>
-            <li>⚡ <strong>【性能极客】0 GC 微卡消除</strong>：重构高频触发拦截器，提升局部对象为全局复用 Buffer，彻底终结了垃圾回收导致的画图微卡顿现象。</li>
-            <li>🖥️ <strong>【UX 蜕变】全透明平权 UI</strong>：摒弃隐藏黑盒，全部命令透明可视。升级为无打断 Toast 文字状态提示，配合经典的系统/扩展双区展示，交互零摩擦。</li>
-            <li>💊 <strong>【智能兼容】配置自愈重写</strong>：自带升级探针，瞬间侦测老版本遗留残缺配置并实现后台静默平滑修补，包含 BLOCK、LAYER 等 28 个原生底层指令。</li>
+            <li><a href="#quick-start"><i class="fa-solid fa-flag"></i> 部署状态</a></li>
+            <li><a href="#overview"><i class="fa-solid fa-bullseye"></i> 产品概述</a></li>
+            <li><a href="#features"><i class="fa-solid fa-bolt"></i> 核心特性</a></li>
+            <li><a href="#guide"><i class="fa-solid fa-book-open"></i> 使用指南</a></li>
+            <li><a href="#compatibility"><i class="fa-solid fa-laptop"></i> 兼容版本</a></li>
+            <li><a href="#faq"><i class="fa-solid fa-circle-question"></i> 常见问题</a></li>
+            <li><a href="#uninstall"><i class="fa-solid fa-trash-can"></i> 卸载流程</a></li>
+            <li><a href="#history"><i class="fa-solid fa-history"></i> 版本历史</a></li>
+            <li><a href="#contact"><i class="fa-solid fa-paper-plane"></i> 联系反馈</a></li>
         </ul>
+    </aside>
 
-        <h3>📦 v0.2.2 (数据流双擎版)</h3>
-        <ul>
-            <li>✨ 废弃系统消息传递，改用 <code>ImmAssociateContext</code> API 从底层剥离输入法 HIMC 句柄，降维打击现代 TSF 输入法。</li>
-            <li>🔧 引入全局图纸激活/销毁事件矩阵，完美阻断多标签页切换时的状态污染。</li>
-        </ul>
+    <main class="container">
+        <header>
+            <span class="brand-badge"><i class="fa-solid fa-shield-halved"></i>【 浅醉 · 墨语】出品</span>
+            <h1>CAD输入法自动切换助手</h1>
+            <p><i class="fa-solid fa-file-code"></i> CAD Auto IME | 技术文档 (v0.3.1 版)</p>
+        </header>
 
-        <h3>📦 v0.2.1 / v0.2.0 (热修复与重构版)</h3>
-        <ul>
-            <li>✨ 引入双重状态洗参机制，剔除输入法内潜藏的全角字符残余。</li>
-            <li>✨ 新增 <code>CUSTOMAUTOIME</code> 图形化配置面板及暗黑主题 HUD 欢迎视窗。</li>
-        </ul>
+        <!-- 部署通知区块 -->
+        <section id="quick-start">
+            <div class="highlight">
+                <h3><i class="fa-solid fa-circle-check"></i> 恭喜！安装部署已完成</h3>
+                <p><strong>系统提示</strong>：CAD 输入法自动切换助手底层运行库已成功部署至你的计算机系统。</p>
+                <ul>
+                    <li>📌 <strong>安装顺序防呆提示</strong>：本插件属于底层注册表注入组件。请务必<strong>先安装并运行过至少一次 AutoCAD</strong>，然后再安装本插件。若你重装或升级了 AutoCAD，请将本插件卸载后重新安装一次，以便重新写入加载引导。</li>
+                    <li>📌 <strong>桌面快捷方式</strong>：仅为你方便查阅本说明文档而创建，可根据个人使用习惯随时删除，<strong>绝不影响程序核心功能的正常后台运行</strong>。</li>
+                </ul>
+            </div>
+        </section>
 
-        <h3>📦 v0.1.0 (初创版)</h3>
-        <ul>
-            <li>✨*梦开始的地方。*</li>
-            <li>✨ 首次公开发布，实现了基础的后台静默监听与输入法切换。虽然还有些稚嫩，但它证明了“让绘图不被打断”这个想法是可行的。</li>
-        </ul>
+        <!-- 产品概述 -->
+        <section id="overview">
+            <h2><i class="fa-solid fa-bullseye"></i> 产品概述</h2>
+            <h3>🔹 产品定位</h3>
+            <p><strong>CAD Auto IME</strong> 是一款专为工程设计领域打造的<strong>底层系统级效率增强组件</strong>。v0.3.1 版在 v0.3 双擎架构基础上进一步打磨稳定性，新增多文档状态隔离与线程安全加固，是生产环境的推荐版本。</p>
 
-        <h2>📮 联系与反馈</h2>
-        <h3>作者信息</h3>
-        <table>
-            <tbody>
-                <tr>
-                    <td width="20%"><strong>作者</strong></td>
-                    <td>Yang Jun [浅醉·墨语] Andy_127</td>
-                </tr>
-                <tr>
-                    <td><strong>技术定位</strong></td>
-                    <td>兴趣爱好,交流分享</td>
-                </tr>
-                <tr>
-                    <td><strong>开发理念</strong></td>
-                    <td>用最底层的技术解决最实际的问题，让设计更专注</td>
-                </tr>
-                <tr>
-                    <td><strong>意见反馈</strong></td>
-                    <td>📱 <a href="https://www.douyin.com/user/MS4wLjABAAAA3MenKPeyKOaRDEFrkZW_mBE3e3DNQrCEulaj1adJWFQ" target="_blank">【浅醉·墨语】_Andy_127</a></td>
-                </tr>
-            </tbody>
-        </table>
+            <h3>🔹 解决的核心问题</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 25%">使用场景</th>
+                            <th style="width: 35%">传统操作方式 (含旧版插件)</th>
+                            <th style="width: 40%">本工具解决方案 (v0.3.1 版)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>日常绘图</strong><br><span style="font-size: 12px; color: #64748b;">(快捷菜单弹出)</span></td>
+                            <td>极易因为弹窗抢走焦点被误切成中文</td>
+                            <td><span class="badge">状态锁+黑名单雷达</span> 画线(PL)等弹窗时死锁英文，绝不误判</td>
+                        </tr>
+                        <tr>
+                            <td><strong>各种文本与图块标注</strong></td>
+                            <td>经常因层级问题导致输入法无法呼出</td>
+                            <td><span class="badge">Win32 底层穿透</span> 穿透嵌套界面，精准捕获打字光标瞬间切中文</td>
+                        </tr>
+                        <tr>
+                            <td><strong>多图纸切换 (MDI)</strong></td>
+                            <td>图纸 A 的中文状态会污染图纸 B</td>
+                            <td><span class="badge-update">v0.3.1 核心升级</span> 独立文档状态机，每张图纸完全隔离，互不干扰</td>
+                        </tr>
+                        <tr>
+                            <td><strong>长时间高负荷绘图</strong></td>
+                            <td>后台频繁监听导致鼠标有轻微顿挫感</td>
+                            <td><span class="badge">极客级内存复用</span> 内存复用优化，彻底消灭 GC 垃圾回收造成的掉帧微卡顿</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-        <div class="footer">
-            <p><strong>感谢你选择 CAD 输入法自动切换助手</strong><br><em>让每一位设计师都能专注于创作，而非输入法切换</em></p>
-            <p>文档版本：v0.3  | 更新时间：2026 年 06 月 20 日 | 适配系统：Windows 7/10/11 (64 位)</p>
-        </div>
-    </div>
+        <!-- 核心特性 -->
+        <section id="features">
+            <h2><i class="fa-solid fa-bolt"></i> v0.3.1 版核心特性</h2>
+            <p>本次版本在 v0.3 史诗级架构基础上，聚焦稳定性与工程化打磨，让插件更稳、更可靠：</p>
+
+            <h3><i class="fa-solid fa-brain"></i> 1. 双擎状态锁：0 误杀防御网</h3>
+            <p>我们将"命令状态"与"焦点弹窗"深度结合。只要你执行的不是白名单里的文字命令，底层就会挂上一把"死锁"，即使界面弹出一万个下拉菜单抢占焦点，插件也绝对不会切出中文。而在使用天正、源泉等图块重命名插件时，则秒切中文。</p>
+
+            <h3><i class="fa-solid fa-lock"></i> 2. 多文档状态物理隔离（v0.3.1 新增）</h3>
+            <p>彻底解决多图纸作业的状态串扰问题。每张图纸拥有独立的输入法状态机，切换文档时自动重置，再也不会出现"图纸 A 打完字，切到图纸 B 画线时莫名其妙出中文"的尴尬。</p>
+
+            <h3><i class="fa-solid fa-shield"></i> 3. 线程安全加固（v0.3.1 新增）</h3>
+            <p>底层焦点雷达全面升级并发安全防护。重构缓冲区管理策略，从根源上杜绝多线程并发导致的潜在风险，长时间运行更稳定。</p>
+
+            <h3><i class="fa-solid fa-desktop"></i> 4. 全透明双区平权 UX 与无感交互</h3>
+            <p>彻底抛弃"黑盒"逻辑。现在的配置面板中，所有 AutoCAD 核心文字命令（如 TEXT, MTEXT, BLOCK, LAYER 等 28 个）与外挂命令完全透明可见。搭配极简的"双击删除"与底部 Toast 无感文字提示，交互体验如丝般顺滑。</p>
+
+            <h3><i class="fa-solid fa-kit-medical"></i> 5. 零配置自愈升级机制</h3>
+            <p>插件内置了智能向下兼容探针。如果你是从老版本升级上来的用户，程序在后台启动时会瞬间发现你的配置文件缺失了新功能指令，并以纳秒级速度静默为你修补完整。你什么都不用做，即刻享受满血体验。</p>
+
+            <h3><i class="fa-solid fa-rocket"></i> 6. 跨世代架构引擎 (兼容 CAD2007~2027)</h3>
+            <p>底层核心经过全面重构，向下兼容至 .NET 3.5 时代的老爷机，向上完美适配未来采用 .NET 10.0 的 AutoCAD 2027，真正做到"全宇宙版本通杀"。</p>
+        </section>
+
+        <!-- 使用指南 -->
+        <section id="guide">
+            <h2><i class="fa-solid fa-book-open"></i> 使用指南与命令</h2>
+            <div class="tip-box">
+                <i class="fa-solid fa-lightbulb" style="color: #3b82f6;"></i> <strong>极简操作提示</strong>：经过大量测试，本程序的当前版本自带 <strong>97 个</strong> 内置命令，包括 <strong>46 个</strong> CAD 原生系统命令和 <strong>51 个</strong> 常用插件命令。可以直接上手画图，如发现有个别自定 LISP 没有切中文，再手动添加即可。
+            </div>
+
+            <div class="warn-box">
+                <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> <strong>添加自定义命令的铁律：必须输入“命令全称”！</strong><br>
+                在配置面板中添加扩展命令时，<strong>严禁输入快捷键（Alias）</strong>（例如画圆不要输 <code>C</code>，创建块不要输 <code>B</code>）。你必须输入 CAD 底部命令行执行时的<strong>真实全称</strong>（例如：<code>CIRCLE</code>、<code>BLOCK</code>、<code>TBLKNAME</code> 等），否则系统底层将无法匹配触发！
+            </div>
+
+            <h3>🔹 1. 呼出白名单配置面板</h3>
+            <p>在 CAD 命令行输入该命令，即可直观管理所有文字、标注指令。支持 Ctrl+Z 撤销，Ctrl+Y 重做，以及双击/Delete 一键防呆删除。</p>
+            <div class="command-card">
+                <div class="command-text">
+                    <span class="prefix">COMMAND:</span>
+                    <code class="actual-cmd" id="cmd-1">CUSTOMAUTOIME</code>
+                </div>
+                <button class="copy-btn" onclick="copyCommand('cmd-1', this)">
+                    <i class="fa-regular fa-copy"></i> 点击复制
+                </button>
+            </div>
+
+            <h3>🔹 2. 临时开启 / 关闭助手</h3>
+            <p>在 CAD 命令行输入该命令，即可一键全局切换插件的运行状态（开启/关闭监控）。</p>
+            <div class="command-card">
+                <div class="command-text">
+                    <span class="prefix">COMMAND:</span>
+                    <code class="actual-cmd" id="cmd-2">TOGGLEAUTOIME</code>
+                </div>
+                <button class="copy-btn" onclick="copyCommand('cmd-2', this)">
+                    <i class="fa-regular fa-copy"></i> 点击复制
+                </button>
+            </div>
+        </section>
+
+        <!-- 兼容版本 -->
+        <section id="compatibility">
+            <h2><i class="fa-solid fa-laptop"></i> 支持的 AutoCAD 版本</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>版本代号</th>
+                            <th>官方版本</th>
+                            <th>架构/框架要求</th>
+                            <th>支持状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>AutoCAD 2007~2014</strong></td>
+                            <td>R17.0 ~ R19.1</td>
+                            <td>32/64 位 (.NET 2~4)</td>
+                            <td><span style="color: #10b981; font-weight: 600;"><i class="fa-solid fa-square-check"></i> 完全支持</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>AutoCAD 2015~2024</strong></td>
+                            <td>R20.0 ~ R24.3</td>
+                            <td>64 位 (.NET 4.x)</td>
+                            <td><span style="color: #10b981; font-weight: 600;"><i class="fa-solid fa-square-check"></i> 完全支持</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>AutoCAD 2025</strong></td>
+                            <td>R25.0</td>
+                            <td>64 位 (.NET 8.0)</td>
+                            <td><span style="color: #3b82f6; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> 全面适配</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>AutoCAD 2026</strong></td>
+                            <td>R25.1</td>
+                            <td>64 位 (.NET 9.0)</td>
+                            <td><span style="color: #3b82f6; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> 全面适配</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>AutoCAD 2027</strong></td>
+                            <td>R26.0</td>
+                            <td>64 位 (.NET 10.0)</td>
+                            <td><span style="color: #8b5cf6; font-weight: 600;"><i class="fa-solid fa-eye"></i> 前瞻性支持</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 常见问题 -->
+        <section id="faq">
+            <h2><i class="fa-solid fa-circle-question"></i> 常见问题解答</h2>
+            
+            <h3>Q1：我可以把面板下方的 TEXT、MTEXT 等系统内置指令删掉吗？</h3>
+            <p><strong>A</strong>：<strong>强烈建议保留！</strong>它们是维持 AutoCAD 正常文字录入的核心骨干。虽然我们将控制权完全交给了你（允许你强行删除），但删除后，这些命令将不再自动切换输入法。如果误删，请点击面板下方的【恢复默认】按钮一键重置。</p>
+
+            <h3>Q2：程序会影响 AutoCAD 运行速度、引起掉帧卡顿吗？</h3>
+            <p><strong>A</strong>：绝对不会。v0.3 版本彻底消灭了高频拦截带来的垃圾回收（GC）压力，通过底层内存 Buffer 复用机制，对 CPU 和帧率的影响严格为 0。v0.3.1 进一步优化了 HUD 定时器频率，哪怕连续画图 10 小时，鼠标依然顺滑如初。</p>
+
+            <h3>Q3：同时打开多张图纸会互相影响吗？</h3>
+            <p><strong>A</strong>：v0.3.1 版本已彻底解决此问题。每张图纸拥有独立的输入法状态机，完全物理隔离。在图纸 A 中输入文字切到中文，切到图纸 B 画线时自动恢复英文，互不干扰。</p>
+        </section>
+
+        <!-- 卸载 -->
+        <section id="uninstall">
+            <h2><i class="fa-solid fa-trash-can"></i> 卸载流程</h2>
+            <p>本程序提供极其纯净的卸载体验，不留任何系统垃圾。</p>
+            <ol class="steps">
+                <li>打开 Windows <strong>「开始菜单」</strong>，找到 <strong>「CAD Auto Ime」</strong> 程序组。</li>
+                <li>点击 <strong>「卸载 CAD 输入法助手」</strong> 选项。</li>
+                <li><span style="color: #d97706; font-weight: 600;">注意</span>：为确保彻底清除注册表占用，卸载时若 CAD 正在运行，程序会弹出友好提示建议您保存图纸并协助自动关闭 CAD 进程。</li>
+            </ol>
+        </section>
+
+        <!-- 版本历史 -->
+        <section id="history">
+            <h2><i class="fa-solid fa-history"></i> 版本历史</h2>
+            <div class="timeline">
+                
+                <div class="timeline-item active">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-title">
+                        <span>🚀 v0.3.1 (稳定性增强版)</span>
+                        <span class="badge-update">本次更新</span>
+                    </div>
+                    <div class="timeline-content">
+                        <ul>
+                            <li><strong>🔒【安全加固】多文档状态物理隔离</strong>：重构为按文档维度独立存储状态，彻底解决多图纸作业时的状态串扰问题，每张图纸拥有独立的输入法状态机。</li>
+                            <li><strong>🧵【线程安全】WinEvent 回调并发加固</strong>：重构底层焦点雷达缓冲区管理，从根源上杜绝多线程并发访问导致的潜在风险，长时间运行更稳定。</li>
+                            <li><strong>⚙️【体验优化】细节打磨</strong>：HUD 悬浮窗定时器降频优化，更新检测新增超时保护，配置文件增加版本头标记，统计语义更精准。</li>
+                            <li><strong>📦【工程化】全局常量统一管理</strong>：版本号、配置路径、注册表路径等全局常量统一收口，消除多处硬编码不同步的隐患。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-title">📦 v0.3 (阶段性-终版)</div>
+                    <div class="timeline-content">
+                        <ul>
+                            <li><strong>🎯【大脑升级】双擎状态锁防误杀</strong>：结合 CommandWillStart 状态锁与带黑名单的焦点雷达，彻底解决了 PL/BO 等快捷菜单误弹中文的世纪难题。</li>
+                            <li><strong>⚡【性能极客】0 GC 微卡消除</strong>：重构高频触发拦截器，提升局部对象为全局复用 Buffer，彻底终结了垃圾回收导致的画图微卡顿现象。</li>
+                            <li><strong>🖥️【UX 蜕变】全透明平权 UI</strong>：摒弃隐藏黑盒，全部命令透明可视。升级为无打断 Toast 文字状态提示，配合经典的系统/扩展双区展示，交互零摩擦。</li>
+                            <li><strong>💊【智能兼容】配置自愈重写</strong>：自带升级探针，瞬间侦测老版本遗留残缺配置并实现后台静默平滑修补，包含 BLOCK、LAYER 等 28 个原生底层指令。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-title">📦 v0.2.2 (数据流双擎版)</div>
+                    <div class="timeline-content">
+                        <ul>
+                            <li>✨ 废弃系统消息传递，改用 <code>ImmAssociateContext</code> API 从底层剥离输入法 HIMC 句柄，降维打击现代 TSF 输入法。</li>
+                            <li>🔧 引入全局图纸激活/销毁事件矩阵，完美阻断多标签页切换时的状态污染。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-title">📦 v0.2.1 / v0.2.0 (热修复与重构版)</div>
+                    <div class="timeline-content">
+                        <ul>
+                            <li>✨ 引入双重状态洗参机制，剔除输入法内潜藏的全角字符残余。</li>
+                            <li>✨ 新增 <code>CUSTOMAUTOIME</code> 图形化配置面板及暗黑主题 HUD 欢迎视窗。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-title">📦 v0.1.0 (初创版)</div>
+                    <div class="timeline-content">
+                        <ul>
+                            <li>✨ <em>梦开始的地方。</em></li>
+                            <li>✨ 首次公开发布，实现了基础的后台静默监听与输入法切换。虽然还有些稚嫩，但它证明了“让绘图不被打断”这个想法是完全可行的。</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 联系我们 -->
+        <section id="contact">
+            <h2><i class="fa-solid fa-paper-plane"></i> 联系与反馈</h2>
+            <div class="table-container">
+                <table class="contact-table">
+                    <tbody>
+                        <tr>
+                            <td style="width: 25%"><strong>作者</strong></td>
+                            <td>Yang Jun [浅醉·墨语] Andy_127</td>
+                        </tr>
+                        <tr>
+                            <td><strong>技术定位</strong></td>
+                            <td>兴趣爱好，交流分享</td>
+                        </tr>
+                        <tr>
+                            <td><strong>开发理念</strong></td>
+                            <td>开源服务每一位绘图者，解决最实际的问题，让设计更专注</td>
+                        </tr>
+                        <tr>
+                            <td><strong>意见反馈</strong></td>
+                            <td>
+                                <a href="https://www.douyin.com/user/MS4wLjABAAAA3MenKPeyKOaRDEFrkZW_mBE3e3DNQrCEulaj1adJWFQ" target="_blank">
+                                    <i class="fa-brands fa-tiktok"></i> 📱 【浅醉·墨语】_Andy_127
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 页脚 -->
+        <footer class="footer">
+            <p><strong>感谢你选择 CAD 输入法自动切换助手</strong></p>
+            <p style="font-style: italic;">让每一位设计师都能专注于创作，而非繁琐的输入法切换</p>
+            <p style="font-size: 11px; margin-top: 16px; color: #94a3b8;">
+                文档版本：v0.3.1 | 更新时间：2026 年 06 月 23 日 | 适配系统：Windows 7/10/11 (64 位)
+            </p>
+        </footer>
+    </main>
+</div>
+
+<script>
+    function copyCommand(id, btnElement) {
+        const cmdCode = document.getElementById(id).innerText;
+        
+        // 兼容 iframe 的替代复制方案
+        const tempTextarea = document.createElement("textarea");
+        tempTextarea.value = cmdCode;
+        document.body.appendChild(tempTextarea);
+        tempTextarea.select();
+        
+        try {
+            document.execCommand('copy');
+            const originalHTML = btnElement.innerHTML;
+            btnElement.innerHTML = '<i class="fa-solid fa-check"></i> 已复制';
+            btnElement.style.color = '#10b981';
+            btnElement.style.borderColor = '#10b981';
+            
+            setTimeout(() => {
+                btnElement.innerHTML = originalHTML;
+                btnElement.style.color = '';
+                btnElement.style.borderColor = '';
+            }, 1800);
+        } catch (err) {
+            console.error('复制失败: ', err);
+        } finally {
+            document.body.removeChild(tempTextarea);
+        }
+    }
+</script>
 </body>
 </html>
