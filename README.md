@@ -136,7 +136,7 @@ C:\Users\用户名\AppData\Roaming\OpenCadIme\AutoImeCommands.txt
 
 ## **CUSTOMAUTOIME 配置面板**
 
-<img width="775" height="900" alt="image" src="https://github.com/user-attachments/assets/852cc81b-381d-4061-a017-647c619b9a25" />
+<p align="center"><img width="50%" alt="CUSTOMAUTOIME 配置面板" src="https://github.com/user-attachments/assets/852cc81b-381d-4061-a017-647c619b9a25" /></p>
 
 
 ---
