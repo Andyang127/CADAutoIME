@@ -136,7 +136,8 @@ C:\Users\用户名\AppData\Roaming\OpenCadIme\AutoImeCommands.txt
 
 ## **CUSTOMAUTOIME 配置面板**
 
-<p align="center"><img width="50%" alt="CAD Auto IME 配置面板" src="https://github.com/user-attachments/assets/569a0fd1-546d-42e5-87d5-b0cfed172cbb" /></p>
+<img width="775" height="900" alt="image" src="https://github.com/user-attachments/assets/852cc81b-381d-4061-a017-647c619b9a25" />
+
 
 ---
 
