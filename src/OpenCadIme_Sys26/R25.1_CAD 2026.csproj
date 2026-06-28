@@ -3,42 +3,53 @@
 	<PropertyGroup>
 		<TargetFramework>net8.0-windows</TargetFramework>
 		<UseWindowsForms>true</UseWindowsForms>
+		<UseWPF>true</UseWPF>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<DefineConstants>$(DefineConstants);USE_WPF</DefineConstants>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<Nullable>disable</Nullable>
 		<PlatformTarget>x64</PlatformTarget>
-		<OutputPath>..\..\build\Sys25</OutputPath>
+		<OutputPath>..\..\build\Sys26</OutputPath>
 		<AppendTargetFrameworkToOutputPath>False</AppendTargetFrameworkToOutputPath>
 		<AppendRuntimeIdentifierToOutputPath>False</AppendRuntimeIdentifierToOutputPath>
 		<AppendConfigurationToOutputPath>False</AppendConfigurationToOutputPath>
 		<GenerateDependencyFile>False</GenerateDependencyFile>
-		<BaseOutputPath>..\..\build\Sys25</BaseOutputPath>
+		<BaseOutputPath>..\..\build\Sys26</BaseOutputPath>
 		<NoWarn>$(NoWarn);MSB3277</NoWarn>
-		<FileVersion>0.3.0.0</FileVersion>
-		<AssemblyVersion>0.3.0.0</AssemblyVersion>
-		<Company>Andy_127</Company>
+		<Platforms>AnyCPU;x86</Platforms>
+		<AssemblyName>OpenCadIme_R25.1_CAD_2026</AssemblyName>
+		<RootNamespace/>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<DebugType>none</DebugType>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+	  <DebugType>none</DebugType>
+	</PropertyGroup>
+
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
 		<DebugType>none</DebugType>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+	  <DebugType>none</DebugType>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<Reference Include="AcCoreMgd">
-			<HintPath>..\..\lib\Sys24_CAD 2025\AcCoreMgd.dll</HintPath>
+			<HintPath>..\..\lib\R25.1_CAD_2026\AcCoreMgd.dll</HintPath>
 			<Private>False</Private>
 			<SpecificVersion>False</SpecificVersion>
 		</Reference>
 		<Reference Include="AcDbMgd">
-			<HintPath>..\..\lib\Sys24_CAD 2025\AcDbMgd.dll</HintPath>
+			<HintPath>..\..\lib\R25.1_CAD_2026\AcDbMgd.dll</HintPath>
 			<Private>False</Private>
 			<SpecificVersion>False</SpecificVersion>
 		</Reference>
 		<Reference Include="AcMgd">
-			<HintPath>..\..\lib\Sys24_CAD 2025\AcMgd.dll</HintPath>
+			<HintPath>..\..\lib\R25.1_CAD_2026\AcMgd.dll</HintPath>
 			<Private>False</Private>
 			<SpecificVersion>False</SpecificVersion>
 		</Reference>

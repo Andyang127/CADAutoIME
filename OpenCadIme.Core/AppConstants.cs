@@ -1,4 +1,5 @@
 using System;
+
 namespace OpenCadIme
 {
     /// <summary>
@@ -8,16 +9,16 @@ namespace OpenCadIme
     internal static class AppConstants
     {
         // ==========================================
-        // 版本信息
+        // 版本信息 (未来升级，只需修改这 1 行！)
         // ==========================================
         /// <summary>主版本号（纯数字，用于语义版本比对）</summary>
-        public const string Version = "0.3.1";
+        public const string Version = "0.4.0";
 
         /// <summary>带 v 前缀的版本号（用于 UI 显示）</summary>
-        public const string VersionDisplay = "v0.3.1";
+        public const string VersionDisplay = "v" + Version;
 
         /// <summary>完整显示版本（带空格后缀，兼容原有格式）</summary>
-        public const string VersionFull = "0.3.1 ";
+        public const string VersionFull = Version + " ";
 
         // ==========================================
         // 配置文件
@@ -38,16 +39,16 @@ namespace OpenCadIme
         public const string RegistryPath = @"Software\OpenCadIme\CADAutoIme";
 
         // ==========================================
-        // 更新相关
+        // 更新相关 (未来若更换仓库，只需修改这 1 行！)
         // ==========================================
         /// <summary>GitHub 仓库地址</summary>
         public const string GitHubRepo = "Andyang127/CADAutoIME";
 
         /// <summary>最新发布页 URL</summary>
-        public const string LatestReleaseUrl = "https://github.com/Andyang127/CADAutoIME/releases/latest";
+        public const string LatestReleaseUrl = "https://github.com/" + GitHubRepo + "/releases/latest";
 
         /// <summary>GitHub API 最新 release 接口</summary>
-        public const string GitHubApiLatest = "https://api.github.com/repos/Andyang127/CADAutoIME/releases/latest";
+        public const string GitHubApiLatest = "https://api.github.com/repos/" + GitHubRepo + "/releases/latest";
 
         /// <summary>更新检测 User-Agent</summary>
         public const string UpdaterUserAgent = "CAD-Auto-IME-Updater";

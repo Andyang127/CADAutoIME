@@ -1,16 +1,16 @@
-﻿using OpenCadIme;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.InteropServices;
+using OpenCadIme;
 
-[assembly: AssemblyTitle("CAD 2018.dll")]
+[assembly: AssemblyTitle("CAD 2025.dll")]
 [assembly: AssemblyDescription(AppConstants.PluginFullName)]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany(AppConstants.AuthorName)]
-[assembly: AssemblyProduct("R22.0")]
+[assembly: AssemblyProduct("R25.0")]
 [assembly: AssemblyCopyright("Copyright © " + AppConstants.AuthorName + " 2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
-[assembly: Guid("2B5F0676-4EEB-4AE7-B3E2-181CDB30FDA7")] 
+[assembly: Guid("1001552b-7892-4e4b-9721-f1eb9c9e54a5")]
 [assembly: AssemblyVersion(AppConstants.Version + ".0")]
 [assembly: AssemblyFileVersion(AppConstants.Version + ".0")]

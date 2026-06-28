@@ -280,6 +280,16 @@
             font-size: 12px;
             font-weight: 600;
         }
+        
+        .badge-core {
+            background-color: #f3e8ff;
+            color: #6b21a8;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
 
         .command-card {
             background-color: #0f172a;
@@ -583,7 +593,7 @@
         <header>
             <span class="brand-badge"><i class="fa-solid fa-shield-halved"></i>【 浅醉 · 墨语】出品</span>
             <h1>CAD输入法自动切换助手</h1>
-            <p><i class="fa-solid fa-file-code"></i> CAD Auto IME | 技术文档 (v0.3.1 版)</p>
+            <p><i class="fa-solid fa-file-code"></i> CAD Auto IME | 技术文档 (v0.4.0 版)</p>
         </header>
 
         <!-- 部署通知区块 -->
@@ -593,6 +603,7 @@
                 <p><strong>系统提示</strong>：CAD 输入法自动切换助手底层运行库已成功部署至你的计算机系统。</p>
                 <ul>
                     <li>📌 <strong>安装顺序防呆提示</strong>：本插件属于底层注册表注入组件。请务必<strong>先安装并运行过至少一次 AutoCAD</strong>，然后再安装本插件。若你重装或升级了 AutoCAD，请将本插件卸载后重新安装一次，以便重新写入加载引导。</li>
+                    <li>📌 <strong>系统权限说明（重要）</strong>：本插件需要向系统发送底层输入法调度指令。请尽量保持 AutoCAD 与日常使用的<strong>权限级别一致</strong>（推荐以普通用户身份运行）。若遇安全软件（如 360、火绒）拦截，请添加至信任白名单，否则切换功能将被阻断。</li>
                     <li>📌 <strong>桌面快捷方式</strong>：仅为你方便查阅本说明文档而创建，可根据个人使用习惯随时删除，<strong>绝不影响程序核心功能的正常后台运行</strong>。</li>
                 </ul>
             </div>
@@ -602,7 +613,7 @@
         <section id="overview">
             <h2><i class="fa-solid fa-bullseye"></i> 产品概述</h2>
             <h3>🔹 产品定位</h3>
-            <p><strong>CAD Auto IME</strong> 是一款专为工程设计领域打造的<strong>底层系统级效率增强组件</strong>。v0.3.1 版在 v0.3 双擎架构基础上进一步打磨稳定性，新增多文档状态隔离与线程安全加固，是生产环境的推荐版本。</p>
+            <p><strong>CAD Auto IME</strong> 是一款专为工程设计领域打造的<strong>底层系统级效率增强组件</strong>。v0.4.0 版，跨越了 WinForms 与 WPF 的技术鸿沟，修复了极端环境下的加载死锁，为全系 AutoCAD 提供 0 崩溃的体验。</p>
 
             <h3>🔹 解决的核心问题</h3>
             <div class="table-container">
@@ -611,29 +622,29 @@
                         <tr>
                             <th style="width: 25%">使用场景</th>
                             <th style="width: 35%">传统操作方式 (含旧版插件)</th>
-                            <th style="width: 40%">本工具解决方案 (v0.3.1 版)</th>
+                            <th style="width: 40%">本工具解决方案 (v0.4.0 版)</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td><strong>日常绘图</strong><br><span style="font-size: 12px; color: #64748b;">(快捷菜单弹出)</span></td>
+                            <td><strong>软件启动加载期</strong></td>
+                            <td>容易导致 CAD 启动卡死或出现底层断言错误</td>
+                            <td><span class="badge-core">多重保险懒加载</span> 无论秒进还是卡顿，100% 顺滑启动，绝不抢占系统资源</td>
+                        </tr>
+                        <tr>
+                            <td><strong>2025/2026 极高版本</strong></td>
+                            <td>因 WPF 寻路机制变动，配置面板静默崩溃无法打开</td>
+                            <td><span class="badge-update">智能资源导航</span> 全球首创内存级程序集寻路，终结高版本 UI 加载黑洞</td>
+                        </tr>
+                        <tr>
+                            <td><strong>日常绘图 (快捷菜单弹出)</strong></td>
                             <td>极易因为弹窗抢走焦点被误切成中文</td>
                             <td><span class="badge">状态锁+黑名单雷达</span> 画线(PL)等弹窗时死锁英文，绝不误判</td>
                         </tr>
                         <tr>
-                            <td><strong>各种文本与图块标注</strong></td>
-                            <td>经常因层级问题导致输入法无法呼出</td>
-                            <td><span class="badge">Win32 底层穿透</span> 穿透嵌套界面，精准捕获打字光标瞬间切中文</td>
-                        </tr>
-                        <tr>
                             <td><strong>多图纸切换 (MDI)</strong></td>
                             <td>图纸 A 的中文状态会污染图纸 B</td>
-                            <td><span class="badge-update">v0.3.1 核心升级</span> 独立文档状态机，每张图纸完全隔离，互不干扰</td>
-                        </tr>
-                        <tr>
-                            <td><strong>长时间高负荷绘图</strong></td>
-                            <td>后台频繁监听导致鼠标有轻微顿挫感</td>
-                            <td><span class="badge">极客级内存复用</span> 内存复用优化，彻底消灭 GC 垃圾回收造成的掉帧微卡顿</td>
+                            <td><span class="badge">多文档状态物理隔离</span> 每张图纸拥有独立状态机，互相之间绝对独立隔离</td>
                         </tr>
                     </tbody>
                 </table>
@@ -642,33 +653,30 @@
 
         <!-- 核心特性 -->
         <section id="features">
-            <h2><i class="fa-solid fa-bolt"></i> v0.3.1 版核心特性</h2>
-            <p>本次版本在 v0.3 史诗级架构基础上，聚焦稳定性与工程化打磨，让插件更稳、更可靠：</p>
+            <h2><i class="fa-solid fa-bolt"></i> v0.4.0 版核心特性</h2>
+            <p>本次版本全面攻克了长期困扰业界插件的“跨版本 API 分裂”与“启动卡死”难题：</p>
 
-            <h3><i class="fa-solid fa-brain"></i> 1. 双擎状态锁：0 误杀防御网</h3>
-            <p>我们将"命令状态"与"焦点弹窗"深度结合。只要你执行的不是白名单里的文字命令，底层就会挂上一把"死锁"，即使界面弹出一万个下拉菜单抢占焦点，插件也绝对不会切出中文。而在使用天正、源泉等图块重命名插件时，则秒切中文。</p>
+            <h3><i class="fa-solid fa-shield-heart"></i> 1. 跨世代极客加载引擎 (Anti-Freeze)</h3>
+            <p>引入了“多重保险监听 + 懒加载”技术。彻底解决早期 CAD (2007) 瞬间加载报错与现代 CAD (2026) 启动画面死锁的矛盾。像猎人一样耐心，只在图纸 100% 准备就绪的瞬间安全切入系统。</p>
 
-            <h3><i class="fa-solid fa-lock"></i> 2. 多文档状态物理隔离（v0.3.1 新增）</h3>
-            <p>彻底解决多图纸作业的状态串扰问题。每张图纸拥有独立的输入法状态机，切换文档时自动重置，再也不会出现"图纸 A 打完字，切到图纸 B 画线时莫名其妙出中文"的尴尬。</p>
+            <h3><i class="fa-solid fa-layer-group"></i> 2. 原生句柄智能 UI 挂载</h3>
+            <p>通过底层动态反射技术，智能适配 2007 的 MFC 消息循环与 2026 的 WPF/XAML 新架构。独家研发 `AssemblyResolve` 导航探针，让极其挑剔的高版本 CAD 也能顺滑弹出极其现代的交互面板，杜绝一切静默崩溃。</p>
 
-            <h3><i class="fa-solid fa-shield"></i> 3. 线程安全加固（v0.3.1 新增）</h3>
-            <p>底层焦点雷达全面升级并发安全防护。重构缓冲区管理策略，从根源上杜绝多线程并发导致的潜在风险，长时间运行更稳定。</p>
+            <h3><i class="fa-solid fa-brain"></i> 3. 双擎状态锁：0 误杀防御网</h3>
+            <p>我们将"命令状态"与"焦点弹窗"深度结合。只要你执行的不是白名单里的文字命令，底层就会挂上一把"死锁"，即使界面弹出一万个下拉菜单抢占焦点，插件也绝对不会切出中文。</p>
 
             <h3><i class="fa-solid fa-desktop"></i> 4. 全透明双区平权 UX 与无感交互</h3>
-            <p>彻底抛弃"黑盒"逻辑。现在的配置面板中，所有 AutoCAD 核心文字命令（如 TEXT, MTEXT, BLOCK, LAYER 等 28 个）与外挂命令完全透明可见。搭配极简的"双击删除"与底部 Toast 无感文字提示，交互体验如丝般顺滑。</p>
+            <p>彻底抛弃"黑盒"逻辑。现在的配置面板中，所有 AutoCAD 核心文字命令（如 TEXT, MTEXT, BLOCK, LAYER 等 28 个）与外挂命令完全透明可见。配合智能防打扰判断（只在后台加载时弹窗，手工敲命令不再遮挡视线），交互如丝般顺滑。</p>
 
-            <h3><i class="fa-solid fa-kit-medical"></i> 5. 零配置自愈升级机制</h3>
-            <p>插件内置了智能向下兼容探针。如果你是从老版本升级上来的用户，程序在后台启动时会瞬间发现你的配置文件缺失了新功能指令，并以纳秒级速度静默为你修补完整。你什么都不用做，即刻享受满血体验。</p>
-
-            <h3><i class="fa-solid fa-rocket"></i> 6. 跨世代架构引擎 (兼容 CAD2007~2027)</h3>
-            <p>底层核心经过全面重构，向下兼容至 .NET 3.5 时代的老爷机，向上完美适配未来采用 .NET 10.0 的 AutoCAD 2027，真正做到"全宇宙版本通杀"。</p>
+            <h3><i class="fa-solid fa-keyboard"></i> 5. 攻克隐式命令（双击修改 _TEXTEDIT）</h3>
+            <p>解决了以往双击单行文字进行修改时，因底层触发隐式 <code>_TEXTEDIT</code> 等特殊命令而导致无法自动切换输入法的顽疾。现在无论是敲击快捷键，还是鼠标双击直接编辑，中文输入法都能精准响应。</p>
         </section>
 
         <!-- 使用指南 -->
         <section id="guide">
             <h2><i class="fa-solid fa-book-open"></i> 使用指南与命令</h2>
             <div class="tip-box">
-                <i class="fa-solid fa-lightbulb" style="color: #3b82f6;"></i> <strong>极简操作提示</strong>：经过大量测试，本程序的当前版本自带 <strong>97 个</strong> 内置命令，包括 <strong>46 个</strong> CAD 原生系统命令和 <strong>51 个</strong> 常用插件命令。可以直接上手画图，如发现有个别自定 LISP 没有切中文，再手动添加即可。
+                <i class="fa-solid fa-lightbulb" style="color: #3b82f6;"></i> <strong>极简操作提示</strong>：本程序的当前版本自带 <strong>97 个</strong> 内置命令，包括 <strong>46 个</strong> CAD 原生系统命令和 <strong>51 个</strong> 常用插件命令。可以直接上手画图，如发现有个别自定 LISP 没有切中文，再手动添加即可。
             </div>
 
             <div class="warn-box">
@@ -731,13 +739,13 @@
                             <td><strong>AutoCAD 2025</strong></td>
                             <td>R25.0</td>
                             <td>64 位 (.NET 8.0)</td>
-                            <td><span style="color: #3b82f6; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> 全面适配</span></td>
+                            <td><span style="color: #10b981; font-weight: 600;"><i class="fa-solid fa-square-check"></i> 完全支持</span></td>
                         </tr>
                         <tr>
                             <td><strong>AutoCAD 2026</strong></td>
                             <td>R25.1</td>
                             <td>64 位 (.NET 9.0)</td>
-                            <td><span style="color: #3b82f6; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> 全面适配</span></td>
+                            <td><span style="color: #10b981; font-weight: 600;"><i class="fa-solid fa-square-check"></i> 完全支持</span></td>
                         </tr>
                         <tr>
                             <td><strong>AutoCAD 2027</strong></td>
@@ -758,10 +766,13 @@
             <p><strong>A</strong>：<strong>强烈建议保留！</strong>它们是维持 AutoCAD 正常文字录入的核心骨干。虽然我们将控制权完全交给了你（允许你强行删除），但删除后，这些命令将不再自动切换输入法。如果误删，请点击面板下方的【恢复默认】按钮一键重置。</p>
 
             <h3>Q2：程序会影响 AutoCAD 运行速度、引起掉帧卡顿吗？</h3>
-            <p><strong>A</strong>：绝对不会。v0.3 版本彻底消灭了高频拦截带来的垃圾回收（GC）压力，通过底层内存 Buffer 复用机制，对 CPU 和帧率的影响严格为 0。v0.3.1 进一步优化了 HUD 定时器频率，哪怕连续画图 10 小时，鼠标依然顺滑如初。</p>
+            <p><strong>A</strong>：绝对不会。本版本彻底消灭了高频拦截带来的垃圾回收（GC）压力，通过底层内存 Buffer 复用机制，对 CPU 和帧率的影响严格为 0。哪怕连续画图 10 小时，鼠标依然顺滑如初。</p>
 
             <h3>Q3：同时打开多张图纸会互相影响吗？</h3>
-            <p><strong>A</strong>：v0.3.1 版本已彻底解决此问题。每张图纸拥有独立的输入法状态机，完全物理隔离。在图纸 A 中输入文字切到中文，切到图纸 B 画线时自动恢复英文，互不干扰。</p>
+            <p><strong>A</strong>：已经彻底解决此问题。每张图纸拥有独立的输入法状态机，完全物理隔离。在图纸 A 中输入文字切到中文，切到图纸 B 画线时自动恢复英文，互不干扰。</p>
+            
+            <h3>Q4：为什么安装/卸载时一直提示 CAD 在运行，点击强制关闭也没用？</h3>
+            <p><strong>A</strong>：这是因为你的 AutoCAD 占用了系统管理员权限，或者残留了隐形的 <code>accoreconsole.exe</code> 进程，导致标准安装包无法强杀。<strong>v0.4.0 安装包已引入“强行突破”防死锁机制</strong>，如果你确认已经手动关闭了 CAD，只需在弹窗提示中点击“是（强行继续）”，即可无视系统权限拦截，完美完成安装与卸载。</p>
         </section>
 
         <!-- 卸载 -->
@@ -771,7 +782,7 @@
             <ol class="steps">
                 <li>打开 Windows <strong>「开始菜单」</strong>，找到 <strong>「CAD Auto Ime」</strong> 程序组。</li>
                 <li>点击 <strong>「卸载 CAD 输入法助手」</strong> 选项。</li>
-                <li><span style="color: #d97706; font-weight: 600;">注意</span>：为确保彻底清除注册表占用，卸载时若 CAD 正在运行，程序会弹出友好提示建议您保存图纸并协助自动关闭 CAD 进程。</li>
+                <li><span style="color: #d97706; font-weight: 600;">注意</span>：为确保彻底清除注册表占用，卸载时若 CAD 正在运行，程序会弹出友好提示建议您保存图纸并协助自动关闭 CAD 进程。遇权限锁定时可选择强行跳过。</li>
             </ol>
         </section>
 
@@ -779,19 +790,33 @@
         <section id="history">
             <h2><i class="fa-solid fa-history"></i> 版本历史</h2>
             <div class="timeline">
-                
+
                 <div class="timeline-item active">
                     <div class="timeline-marker"></div>
                     <div class="timeline-title">
-                        <span>🚀 v0.3.1 (稳定性增强版)</span>
+                        <span>🚀 v0.4.0 版</span>
                         <span class="badge-update">本次更新</span>
                     </div>
                     <div class="timeline-content">
                         <ul>
-                            <li><strong>🔒【安全加固】多文档状态物理隔离</strong>：重构为按文档维度独立存储状态，彻底解决多图纸作业时的状态串扰问题，每张图纸拥有独立的输入法状态机。</li>
-                            <li><strong>🧵【线程安全】WinEvent 回调并发加固</strong>：重构底层焦点雷达缓冲区管理，从根源上杜绝多线程并发访问导致的潜在风险，长时间运行更稳定。</li>
-                            <li><strong>⚙️【体验优化】细节打磨</strong>：HUD 悬浮窗定时器降频优化，更新检测新增超时保护，配置文件增加版本头标记，统计语义更精准。</li>
-                            <li><strong>📦【工程化】全局常量统一管理</strong>：版本号、配置路径、注册表路径等全局常量统一收口，消除多处硬编码不同步的隐患。</li>
+                            <li><strong>🛡️【架构重构】多重保险懒加载</strong>：彻底重写初始化生命周期与状态锁，无论是老版本 CAD 秒进，还是高版本卡加载画面，绝不卡死系统，实现 100% 顺滑加载。</li>
+                            <li><strong>🪟【UI 引擎】跨世代安全窗口托管</strong>：独创 WPF 资源 <code>AssemblyResolve</code> 内存导航技术与 MFC 智能句柄回退机制，彻底终结了高版本 (CAD2025/2026) 配置面板打不开的黑历史。</li>
+                            <li><strong>🤖【智能交互】防打扰机制</strong>：引入 <code>isManualCommand</code> 精准区分系统后台自动唤醒与用户手动敲击命令，手工呼出面板时绝不弹欢迎弹窗干扰视线。</li>
+                            <li><strong>🛠️【部署升级】抗阻断强杀安装包</strong>：采用全新的系统级进程强杀与超时防死锁逻辑，无惧 Administrator 权限降级拦截，安装/卸载永不卡死。</li>
+                            <li><strong>📝【深度兼容】隐式命令修复</strong>：完美解决了双击编辑文字（底层调用 <code>_TEXTEDIT</code> 等隐式命令）时无法自动切换输入法的世纪难题，输入体验彻底闭环。</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-title">
+                        <span>📦 v0.3.1 (稳定性增强版)</span>
+                    </div>
+                    <div class="timeline-content">
+                        <ul>
+                            <li><strong>🔒【安全加固】多文档状态物理隔离</strong>：重构为按文档维度独立存储状态，彻底解决多图纸作业时的状态串扰问题。</li>
+                            <li><strong>🧵【线程安全】并发加固</strong>：重构底层焦点雷达缓冲区管理，从根源上杜绝多线程并发访问导致的潜在风险，彻底消除 WPF 异步请求 UI 崩溃隐患。</li>
                         </ul>
                     </div>
                 </div>
@@ -801,30 +826,19 @@
                     <div class="timeline-title">📦 v0.3 (阶段性-终版)</div>
                     <div class="timeline-content">
                         <ul>
-                            <li><strong>🎯【大脑升级】双擎状态锁防误杀</strong>：结合 CommandWillStart 状态锁与带黑名单的焦点雷达，彻底解决了 PL/BO 等快捷菜单误弹中文的世纪难题。</li>
+                            <li><strong>🎯【大脑升级】双擎状态锁防误杀</strong>：结合 CommandWillStart 状态锁与带黑名单的焦点雷达，彻底解决了 PL/BO 等快捷菜单误弹中文的难题。</li>
                             <li><strong>⚡【性能极客】0 GC 微卡消除</strong>：重构高频触发拦截器，提升局部对象为全局复用 Buffer，彻底终结了垃圾回收导致的画图微卡顿现象。</li>
-                            <li><strong>🖥️【UX 蜕变】全透明平权 UI</strong>：摒弃隐藏黑盒，全部命令透明可视。升级为无打断 Toast 文字状态提示，配合经典的系统/扩展双区展示，交互零摩擦。</li>
-                            <li><strong>💊【智能兼容】配置自愈重写</strong>：自带升级探针，瞬间侦测老版本遗留残缺配置并实现后台静默平滑修补，包含 BLOCK、LAYER 等 28 个原生底层指令。</li>
+                            <li><strong>🖥️【UX 蜕变】全透明平权 UI</strong>：摒弃隐藏黑盒，全部命令透明可视，配合经典的系统/扩展双区展示，交互零摩擦。</li>
                         </ul>
                     </div>
                 </div>
 
                 <div class="timeline-item">
                     <div class="timeline-marker"></div>
-                    <div class="timeline-title">📦 v0.2.2 (数据流双擎版)</div>
+                    <div class="timeline-title">📦 v0.2.x (数据流重构版)</div>
                     <div class="timeline-content">
                         <ul>
                             <li>✨ 废弃系统消息传递，改用 <code>ImmAssociateContext</code> API 从底层剥离输入法 HIMC 句柄，降维打击现代 TSF 输入法。</li>
-                            <li>🔧 引入全局图纸激活/销毁事件矩阵，完美阻断多标签页切换时的状态污染。</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-title">📦 v0.2.1 / v0.2.0 (热修复与重构版)</div>
-                    <div class="timeline-content">
-                        <ul>
                             <li>✨ 引入双重状态洗参机制，剔除输入法内潜藏的全角字符残余。</li>
                             <li>✨ 新增 <code>CUSTOMAUTOIME</code> 图形化配置面板及暗黑主题 HUD 欢迎视窗。</li>
                         </ul>
@@ -866,8 +880,8 @@
                         <tr>
                             <td><strong>意见反馈</strong></td>
                             <td>
-                                <a href="https://www.douyin.com/user/MS4wLjABAAAA3MenKPeyKOaRDEFrkZW_mBE3e3DNQrCEulaj1adJWFQ" target="_blank">
-                                    <i class="fa-brands fa-tiktok"></i> 📱 【浅醉·墨语】_Andy_127
+                                <a href="https://v.douyin.com/lGMz8-jzo5U/" target="_blank">
+                                     📱 【浅醉·墨语】_Andy_127<i class="fa-brands fa-tiktok"></i>
                                 </a>
                             </td>
                         </tr>
@@ -881,7 +895,7 @@
             <p><strong>感谢你选择 CAD 输入法自动切换助手</strong></p>
             <p style="font-style: italic;">让每一位设计师都能专注于创作，而非繁琐的输入法切换</p>
             <p style="font-size: 11px; margin-top: 16px; color: #94a3b8;">
-                文档版本：v0.3.1 | 更新时间：2026 年 06 月 23 日 | 适配系统：Windows 7/10/11 (64 位)
+                文档版本：v0.4.0 | 更新时间：2026 年 06 月 27 日 | 适配系统：Windows 7/10/11 (64 位)
             </p>
         </footer>
     </main>

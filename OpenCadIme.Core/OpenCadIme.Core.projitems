@@ -10,15 +10,37 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)AppConstants.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\imecontroller.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)core\CommandInterceptor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)core\ConfigManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)core\FocusHookManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)core\Logger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UI\ModernWpf\uiConfigManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\ImeController.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)pluginmain.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UI\ConfigForm.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Config\ConfigManager.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\win32api.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Win32API.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\HudManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UI\LegacyForm\ConfigForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)UpdateManager.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkVersion)' != 'v3.5'">
+    <Compile Include="$(MSBuildThisFileDirectory)UI\ModernWpf\WindowManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UI\ModernWpf\ConfigWindow.xaml.cs">
+      <DependentUpon>ConfigWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkVersion)' != 'v3.5'">
+    <Page Include="$(MSBuildThisFileDirectory)UI\ModernWpf\ConfigWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Interop\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Config\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Core\" />
+    <Folder Include="$(MSBuildThisFileDirectory)UI\LegacyForm\" />
+    <Folder Include="$(MSBuildThisFileDirectory)UI\ModernWpf\" />
   </ItemGroup>
 </Project>

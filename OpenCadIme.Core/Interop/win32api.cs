@@ -1,13 +1,13 @@
+#pragma warning disable CA1416
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
-namespace OpenCadIme
+
+namespace OpenCadIme.Interop
 {
     internal static class Win32API
     {
-        // ==========================================
-        // 1. IMM32.dll (输入法核心 API)
-        // ==========================================
+        #region 1. IMM32.dll (传统输入法核心 API)
         [DllImport("imm32.dll", CharSet = CharSet.Auto)]
         public static extern IntPtr ImmGetContext(IntPtr hwnd);
 
@@ -20,7 +20,6 @@ namespace OpenCadIme
         [DllImport("imm32.dll", CharSet = CharSet.Auto)]
         public static extern bool ImmReleaseContext(IntPtr hwnd, IntPtr hIMC);
 
-        // --- 终极防御：输入法上下文剥离 API (拔网线技术核心) ---
         [DllImport("imm32.dll", CharSet = CharSet.Auto)]
         public static extern IntPtr ImmAssociateContext(IntPtr hWnd, IntPtr hIMC);
 
@@ -32,9 +31,9 @@ namespace OpenCadIme
 
         [DllImport("imm32.dll", CharSet = CharSet.Auto)]
         public static extern bool ImmSetConversionStatus(IntPtr hIMC, uint fdwConversion, uint fdwSentence);
-        // ==========================================
-        // 2. USER32.dll & KERNEL32 (焦点、穿透与系统级事件钩子 API)
-        // ==========================================
+        #endregion
+
+        #region 2. USER32.dll & KERNEL32 (焦点、穿透与系统级事件钩子 API)
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern IntPtr GetFocus();
 
@@ -47,22 +46,59 @@ namespace OpenCadIme
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);
 
-        // --- ⭐透视眼镜 API，用于获取窗口的真实类名 ---
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
-        // --- HUD 界面所需的鼠标穿透与窗口状态 API ---
-        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+        [DllImport("user32.dll", EntryPoint = "GetWindowLong")]
+        private static extern IntPtr GetWindowLongPtr32(IntPtr hWnd, int nIndex);
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        public static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+        [DllImport("user32.dll", EntryPoint = "GetWindowLongPtr")]
+        private static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
+
+        /// <summary>
+        /// 获取窗口信息（32/64 位自适应版）
+        /// </summary>
+        public static IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex)
+        {
+            if (IntPtr.Size == 8) return GetWindowLongPtr64(hWnd, nIndex);
+            else return GetWindowLongPtr32(hWnd, nIndex);
+        }
+
+        [DllImport("user32.dll", EntryPoint = "SetWindowLong")]
+        private static extern IntPtr SetWindowLongPtr32(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+        [DllImport("user32.dll", EntryPoint = "SetWindowLongPtr")]
+        private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+        /// <summary>
+        /// 设置窗口信息（32/64 位自适应版）
+        /// </summary>
+        public static IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong)
+        {
+            if (IntPtr.Size == 8) return SetWindowLongPtr64(hWnd, nIndex, dwNewLong);
+            else return SetWindowLongPtr32(hWnd, nIndex, dwNewLong);
+        }
+
+        /// <summary>
+        /// 兼容封装：获取窗口整数值（如扩展样式），内部自动适配 32/64 位
+        /// </summary>
+        public static int GetWindowLong(IntPtr hWnd, int nIndex)
+        {
+            return GetWindowLongPtr(hWnd, nIndex).ToInt32();
+        }
+
+        /// <summary>
+        /// 兼容封装：设置窗口整数值（如扩展样式），内部自动适配 32/64 位
+        /// </summary>
+        public static int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong)
+        {
+            return SetWindowLongPtr(hWnd, nIndex, new IntPtr(dwNewLong)).ToInt32();
+        }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
-        // --- 系统级事件监听核心 API ---
         public delegate void WinEventDelegate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
@@ -73,36 +109,39 @@ namespace OpenCadIme
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         public static extern uint GetCurrentProcessId();
-        // ==========================================
-        // 3. GDI32.dll (UI 圆角绘制)
-        // ==========================================
+        #endregion
+
+        #region 3. GDI32.dll (UI 圆角绘制)
         [DllImport("Gdi32.dll", EntryPoint = "CreateRoundRectRgn", CharSet = CharSet.Auto)]
         public static extern IntPtr CreateRoundRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect, int nWidthEllipse, int nHeightEllipse);
 
         [DllImport("gdi32.dll", EntryPoint = "DeleteObject", CharSet = CharSet.Auto)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool DeleteObject(IntPtr hObject);
-        // ==========================================
-        // 4. 常量定义 (Constants)
-        // ==========================================
-        public const uint IME_CMODE_ALPHANUMERIC = 0x0000; // 纯英文模式
-        public const uint IME_CMODE_NATIVE = 0x0001;       // 中文/本地化模式
-        public const uint IME_CMODE_FULLSHAPE = 0x0008;    // 全角模式
-        public const uint IME_CMODE_SYMBOL = 0x0400;       // 标点模式
+        #endregion
+
+        #region 4. 常量定义与结构体
+        public const uint IME_CMODE_ALPHANUMERIC = 0x0000;
+        public const uint IME_CMODE_NATIVE = 0x0001;
+        public const uint IME_CMODE_FULLSHAPE = 0x0008;
+        public const uint IME_CMODE_SYMBOL = 0x0400;
+
         public const uint EVENT_OBJECT_FOCUS = 0x8005;
         public const uint WINEVENT_OUTOFCONTEXT = 0x0000;
-        // HUD 鼠标穿透所需常量
+
         public const int GWL_EXSTYLE = -20;
         public const int WS_EX_TRANSPARENT = 0x20;
         public const int WS_EX_LAYERED = 0x80000;
-        // ==========================================
-        // 5. 结构体定义 (Structs)
-        // ==========================================
+
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
         {
-            public int Left; public int Top; public int Right; public int Bottom;
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
         }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct GUITHREADINFO
         {
@@ -116,5 +155,43 @@ namespace OpenCadIme
             public IntPtr hwndCaret;
             public RECT rcCaret;
         }
+        #endregion
+
+        #region 5. 现代 TSF (Text Services Framework) COM 接口与结构体
+        [DllImport("msctf.dll")]
+        public static extern int TF_CreateThreadMgr(out IntPtr ppTim);
+
+        public static readonly Guid CLSID_TF_ThreadMgr = new Guid("52888644-AB49-11D0-B614-00C04F7895E5");
+        public static readonly Guid IID_ITfThreadMgr = new Guid("aa80e801-2021-11d2-93e0-0060b067b86e");
+        public static readonly Guid IID_ITfCompartmentMgr = new Guid("7dcf2a8d-75a1-4775-ab84-984dd322a3c7");
+        public static readonly Guid GUID_COMPARTMENT_KEYBOARD_OPENCLOSE = new Guid("BA5EA910-E27F-11D3-8AF2-00C04F7546A3");
+        public static readonly Guid GUID_COMPARTMENT_KEYBOARD_CONVERSIONSTATUS = new Guid("4a3ad7d4-28a2-4c13-8b80-ad27a2245d7d");
+
+        [StructLayout(LayoutKind.Explicit, Size = 16)]
+        public struct Variant
+        {
+            [FieldOffset(0)] public ushort vt;
+            [FieldOffset(8)] public int lVal;
+        }
+
+        [ComImport]
+        [Guid("7dcf2a8d-75a1-4775-ab84-984dd322a3c7")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        public interface ITfCompartmentMgr
+        {
+            void GetCompartment([In] ref Guid rguid, out ITfCompartment ppComp);
+            void ClearCompartment(uint ec, [In] ref Guid rguid);
+            void EnumCompartments(out IntPtr ppEnum);
+        }
+
+        [ComImport]
+        [Guid("bb08c0ef-607e-43c7-9a64-cd2944ce4004")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        public interface ITfCompartment
+        {
+            void SetValue(uint ec, [In] ref Variant pvar);
+            void GetValue(out Variant pvar);
+        }
+        #endregion
     }
 }

@@ -1,376 +1,525 @@
+#pragma warning disable CA1416
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Runtime.CompilerServices;
 using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.ApplicationServices;
+using OpenCadIme.Core;
+
 [assembly: ExtensionApplication(typeof(OpenCadIme.PluginMain))]
 namespace OpenCadIme
 {
     public class PluginMain : IExtensionApplication, IDisposable
     {
-        private Dictionary<string, bool> _whitelistCommands;
-        private List<Document> _hookedDocs = new List<Document>();
-        private List<Document> _pendingWelcomeDocs = new List<Document>();
-        private readonly object _docLock = new object();
+        private FocusHookManager _focusManager;
+        private CommandInterceptor _commandInterceptor;
+        private UI.HudManager _hudManager;
+
         private bool _isPluginEnabled = true;
         private bool _disposed = false;
+        private bool _isFullyInitialized = false;
+        private bool _hasHookedStartupEvents = false;
 
-        // ⭐ v0.3.1 修复：按文档维度隔离文本命令状态，防止多文档互相干扰
-        private Dictionary<Document, bool> _textCommandActiveDocs = new Dictionary<Document, bool>();
-        private readonly object _textCmdLock = new object();
+        private IntPtr _lastProcessedHwnd = IntPtr.Zero;
+        private string _lastProcessedClassName = string.Empty;
 
-        private HudManager _hudManager;
-        private IntPtr _winEventHook = IntPtr.Zero;
-        private Win32API.WinEventDelegate _hookDelegate;
-        private uint _currentProcessId;
-        private IntPtr _lastFocusHwnd = IntPtr.Zero;
-        private DateTime _lastFocusTime = DateTime.MinValue;
-        // ⚠️ 注意：_classNameBuffer 已移除，改为在 WinEventCallback 内使用局部变量
-        // 避免多线程并发访问导致的 StringBuilder 线程安全问题
+        private bool _isCurrentlyInEditor = false;
+        private bool _hasForcedChineseForThisEditor = false;
+        private bool _hasForcedEnglishForThisCanvas = false;
+
+        private HashSet<IntPtr> _welcomedDocs = new HashSet<IntPtr>();
+        private string _pendingHudVersion = null;
+
+        // 【核心优化】：主窗口句柄缓存，避免高频调用 Process.GetCurrentProcess() 导致 CPU 飙升
+        private static IntPtr _cachedCadHandle = IntPtr.Zero;
+
+        internal class CadWindowWrapper : System.Windows.Forms.IWin32Window
+        {
+            private IntPtr _hwnd;
+            public CadWindowWrapper(IntPtr handle) { _hwnd = handle; }
+            public IntPtr Handle { get { return _hwnd; } }
+        }
+
         public void Initialize()
         {
             try
             {
-                _isPluginEnabled = true;
-                _disposed = false;
-                _currentProcessId = Win32API.GetCurrentProcessId();
-                _hookDelegate = new Win32API.WinEventDelegate(WinEventCallback);
-                _winEventHook = Win32API.SetWinEventHook(
-                    Win32API.EVENT_OBJECT_FOCUS, Win32API.EVENT_OBJECT_FOCUS,
-                    IntPtr.Zero, _hookDelegate, _currentProcessId, 0, Win32API.WINEVENT_OUTOFCONTEXT);
-                _hudManager = new HudManager();
-                _whitelistCommands = ConfigManager.LoadCommands();
-                foreach (Document doc in Application.DocumentManager) AttachEvents(doc);
-                Application.DocumentManager.DocumentCreated += OnDocumentCreated;
-                Application.DocumentManager.DocumentBecameCurrent += OnDocumentBecameCurrent;
-                Application.DocumentManager.DocumentDestroyed += OnDocumentDestroyed;
-                System.Windows.Forms.Application.Idle += OnApplicationIdle;
-                ImeController.ForceEnglish(GetCadMainWindowHandle());
-            }
-            catch (System.Exception ex) { LogError("Initialize", "初始化失败", ex); }
-        }
-        public void Terminate() { Dispose(); }
-        public void Dispose() { Dispose(true); GC.SuppressFinalize(this); }
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed) return;
-            if (disposing)
-            {
-                try
-                {
-                    if (_winEventHook != IntPtr.Zero)
-                    {
-                        Win32API.UnhookWinEvent(_winEventHook);
-                        _winEventHook = IntPtr.Zero;
-                    }
-                    Application.DocumentManager.DocumentCreated -= OnDocumentCreated;
-                    Application.DocumentManager.DocumentBecameCurrent -= OnDocumentBecameCurrent;
-                    Application.DocumentManager.DocumentDestroyed -= OnDocumentDestroyed;
-                    System.Windows.Forms.Application.Idle -= OnApplicationIdle;
-                    lock (_docLock)
-                    {
-                        for (int i = _hookedDocs.Count - 1; i >= 0; i--)
-                        {
-                            if (_hookedDocs[i] != null && !_hookedDocs[i].IsDisposed) DetachEventsUnsafe(_hookedDocs[i]);
-                        }
-                        _hookedDocs.Clear();
-                        _pendingWelcomeDocs.Clear();
-                    }
-                    if (_hudManager != null) { _hudManager.Dispose(); _hudManager = null; }
+                AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+                Logger.Info("PluginMain", $"{AppConstants.PluginShortName} v{AppConstants.VersionDisplay} 开始挂载...");
 
-                    // ⭐ v0.3.1 修复：清理文本命令状态字典
-                    lock (_textCmdLock)
-                    {
-                        _textCommandActiveDocs.Clear();
-                    }
+                if (Application.DocumentManager != null)
+                {
+                    Application.DocumentManager.DocumentBecameCurrent += OnDocumentBecameCurrent;
                 }
-                catch (System.Exception ex) { LogError("Dispose", "销毁资源时发生异常", ex); }
+
+                if (TryInitialize(false)) return;
+
+                Application.DocumentManager.DocumentBecameCurrent += OnStartupEvent;
+                Application.DocumentManager.DocumentCreated += OnStartupEvent;
+                Application.SystemVariableChanged += OnStartupEvent;
+
+                _hasHookedStartupEvents = true;
             }
-            _disposed = true;
+            catch (System.Exception ex) { Logger.Error("PluginMain", "插件预加载阶段失败", ex); }
         }
-        private void OnDocumentCreated(object sender, DocumentCollectionEventArgs e)
+
+        private System.Reflection.Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
-            if (e.Document != null) AttachEvents(e.Document);
+            var executingAssembly = System.Reflection.Assembly.GetExecutingAssembly();
+            string assemblyName = executingAssembly.GetName().Name;
+
+            if (args.Name.StartsWith(assemblyName, StringComparison.OrdinalIgnoreCase))
+            {
+                if (args.Name.IndexOf(".resources", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    return executingAssembly;
+                }
+            }
+            return null;
         }
+
+        private void OnStartupEvent(object sender, EventArgs e)
+        {
+            TryInitialize(false);
+        }
+
         private void OnDocumentBecameCurrent(object sender, DocumentCollectionEventArgs e)
         {
             if (e.Document != null)
             {
-                AttachEvents(e.Document);
-                if (_isPluginEnabled)
-                {
-                    // ⭐ v0.3.1 修复：按文档重置状态，不影响其他文档
-                    SetTextCommandActive(e.Document, false);
-                    ImeController.ForceEnglish(GetCadMainWindowHandle());
-                }
+                TryPrintDocumentWelcome(e.Document);
             }
         }
-        private void OnDocumentDestroyed(object sender, DocumentDestroyedEventArgs e)
+
+        private void TryPrintDocumentWelcome(Document doc)
         {
-            lock (_docLock)
+            if (doc == null || doc.Editor == null || !_isPluginEnabled) return;
+            try
             {
-                for (int i = _hookedDocs.Count - 1; i >= 0; i--)
+                IntPtr ptr = doc.UnmanagedObject;
+                if (!_welcomedDocs.Contains(ptr))
                 {
-                    if (_hookedDocs[i].IsDisposed || _hookedDocs[i].Name == e.FileName)
+                    doc.Editor.WriteMessage("\n");
+                    doc.Editor.WriteMessage("==============================================================\n");
+                    doc.Editor.WriteMessage($"[[浅醉·墨语]CAD Auto IME 输入法自动切换程序]{AppConstants.VersionDisplay}已成功启动！\n");
+                    if (ConfigManager.LoadedCustomCount > 0)
+                        doc.Editor.WriteMessage(">>> 已成功从 AutoImeCommands.txt 载入" + ConfigManager.LoadedCustomCount + "个自定义白名单命令 <<<\n");
+                    doc.Editor.WriteMessage("------------------------------------------------------------\n");
+                    doc.Editor.WriteMessage("💡 输入命令 TOGGLEAUTOIME 可【开启/关闭】本程序\n");
+                    doc.Editor.WriteMessage("💡 输入命令 CUSTOMAUTOIME 可调用自定义配置面板\n");
+                    doc.Editor.WriteMessage("==============================================================\n");
+                    doc.Editor.WriteMessage("\n");
+                    _welcomedDocs.Add(ptr);
+                }
+            }
+            catch { }
+        }
+
+        private bool CheckAndSetHudShownFlag()
+        {
+            try
+            {
+                string cadVersion = Application.Version.ToString();
+                // 【洁癖级修复】：统一采用 AppConstants 中的标准注册表路径，终结混乱
+                string regPath = $@"{AppConstants.RegistryPath}\WelcomeHud";
+
+                using (var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(regPath))
+                {
+                    if (key.GetValue(cadVersion) != null)
                     {
-                        DetachEventsUnsafe(_hookedDocs[i]);
-                        _hookedDocs.RemoveAt(i);
-                    }
-                }
-                for (int i = _pendingWelcomeDocs.Count - 1; i >= 0; i--)
-                {
-                    if (_pendingWelcomeDocs[i].IsDisposed || _pendingWelcomeDocs[i].Name == e.FileName) _pendingWelcomeDocs.RemoveAt(i);
-                }
-            }
-            // ⭐ v0.3.1 修复：清理已销毁文档的文本命令状态
-            CleanupDisposedDocStates();
-        }
-        private void AttachEvents(Document doc)
-        {
-            if (doc == null || doc.IsDisposed) return;
-            lock (_docLock)
-            {
-                if (!_hookedDocs.Contains(doc))
-                {
-                    doc.CommandWillStart += OnCommandWillStart;
-                    doc.CommandEnded += OnCommandEnded;
-                    doc.CommandCancelled += OnCommandEnded;
-                    doc.CommandFailed += OnCommandEnded;
-                    _hookedDocs.Add(doc);
-                    if (!_pendingWelcomeDocs.Contains(doc)) _pendingWelcomeDocs.Add(doc);
-                }
-            }
-        }
-        private void DetachEventsUnsafe(Document doc)
-        {
-            try
-            {
-                if (doc == null || doc.IsDisposed) return;
-                doc.CommandWillStart -= OnCommandWillStart;
-                doc.CommandEnded -= OnCommandEnded;
-                doc.CommandCancelled -= OnCommandEnded;
-                doc.CommandFailed -= OnCommandEnded;
-            }
-            catch (System.Exception ex) { LogError("DetachEventsUnsafe", "注销图纸事件失败", ex); }
-        }
-        #region 稳如泰山的核心判定逻辑
-        private void OnCommandWillStart(object sender, CommandEventArgs e)
-        {
-            if (!_isPluginEnabled) return;
-            try
-            {
-                string globalCmd = e.GlobalCommandName;
-                if (!string.IsNullOrEmpty(globalCmd) && globalCmd.StartsWith("'")) return;
-                string cmd = globalCmd.Trim().TrimStart('_', '-', '\'', '.').ToUpperInvariant();
-
-                // ⭐ v0.3.1 修复：从 sender 获取当前文档，按文档维度隔离状态
-                Document doc = sender as Document;
-
-                if (_whitelistCommands.ContainsKey(cmd))
-                {
-                    if (doc != null) SetTextCommandActive(doc, true);
-                    // ⭐ 终极修复 1：一旦命中白名单（如 TBlkname），立刻强制切中文！
-                    // 绝不画蛇添足地去切英文，防止命令被反杀。
-                    ImeController.ForceChinese(GetCadMainWindowHandle());
-                }
-                else
-                {
-                    if (doc != null) SetTextCommandActive(doc, false);
-                    ImeController.ForceEnglish(GetCadMainWindowHandle());
-                }
-            }
-            catch (System.Exception ex) { LogError("OnCommandWillStart", "命令启动判定异常", ex); }
-        }
-        private void OnCommandEnded(object sender, CommandEventArgs e)
-        {
-            if (!_isPluginEnabled) return;
-            try
-            {
-                string globalCmd = e.GlobalCommandName;
-                if (!string.IsNullOrEmpty(globalCmd) && globalCmd.StartsWith("'")) return;
-
-                // ⭐ v0.3.1 修复：从 sender 获取当前文档，按文档维度隔离状态
-                Document doc = sender as Document;
-                if (doc != null) SetTextCommandActive(doc, false);
-
-                ImeController.ForceEnglish(GetCadMainWindowHandle());
-            }
-            catch (System.Exception ex) { LogError("OnCommandEnded", "命令结束判定异常", ex); }
-        }
-        private void WinEventCallback(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
-        {
-            if (!_isPluginEnabled) return;
-            try
-            {
-                if (eventType == Win32API.EVENT_OBJECT_FOCUS && hwnd != IntPtr.Zero)
-                {
-                    IntPtr foregroundWnd = Win32API.GetForegroundWindow();
-                    uint foregroundPid;
-                    Win32API.GetWindowThreadProcessId(foregroundWnd, out foregroundPid);
-                    if (foregroundPid != _currentProcessId) return;
-                    if (hwnd == _lastFocusHwnd && (DateTime.Now - _lastFocusTime).TotalMilliseconds < 300) return;
-                    _lastFocusHwnd = hwnd;
-                    _lastFocusTime = DateTime.Now;
-
-                    // ⭐ v0.3.1 修复：获取当前活动文档的文本命令状态
-                    bool isTextActive = IsTextCommandActiveForCurrentDoc();
-
-                    if (isTextActive)
-                    {
-                        // ⭐ v0.3.1 修复：使用局部 StringBuilder，避免多线程并发访问导致的线程安全问题
-                        StringBuilder classNameBuffer = new StringBuilder(256);
-                        Win32API.GetClassName(hwnd, classNameBuffer, classNameBuffer.Capacity);
-                        string className = classNameBuffer.ToString();
-                        // ⭐ 终极修复 2：在白名单命令状态下，解除对命令行 (AcConsole) 的拦截！
-                        // 保证像 TBlkname 这种直接在底部命令行索要文本的插件能完美切出中文。
-                        // 只拦截智能提示弹窗 (AcAutoComp) 和右键菜单 (#32768)。
-                        if (className.IndexOf("AcAutoComp", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            className == "#32768")
-                        {
-                            return;
-                        }
-                        ImeController.ForceChinese(hwnd);
+                        return false;
                     }
                     else
                     {
-                        ImeController.ForceEnglish(hwnd);
+                        key.SetValue(cadVersion, AppConstants.VersionFull);
+                        return true;
                     }
-                }
-            }
-            catch (System.Exception ex) { LogError("WinEventCallback", "焦点雷达执行异常", ex); }
-        }
-
-        #region 文本命令状态辅助方法（按文档隔离）
-        /// <summary>
-        /// 设置指定文档的文本命令激活状态
-        /// </summary>
-        private void SetTextCommandActive(Document doc, bool active)
-        {
-            if (doc == null || doc.IsDisposed) return;
-            lock (_textCmdLock)
-            {
-                _textCommandActiveDocs[doc] = active;
-            }
-        }
-
-        /// <summary>
-        /// 获取当前活动文档的文本命令激活状态
-        /// </summary>
-        private bool IsTextCommandActiveForCurrentDoc()
-        {
-            try
-            {
-                Document doc = Application.DocumentManager.MdiActiveDocument;
-                if (doc == null || doc.IsDisposed) return false;
-                lock (_textCmdLock)
-                {
-                    bool result;
-                    if (_textCommandActiveDocs.TryGetValue(doc, out result))
-                    {
-                        return result;
-                    }
-                    return false;
                 }
             }
             catch
             {
+                return false; // 如果因权限问题读写失败，默认不再显示，以免惹怒用户
+            }
+        }
+
+        private bool TryInitialize(bool isManualCommand = false)
+        {
+            if (_disposed || _isFullyInitialized) return true;
+
+            Document doc = null;
+            try
+            {
+                if (Application.DocumentManager.Count > 0)
+                    doc = Application.DocumentManager.MdiActiveDocument;
+            }
+            catch { return false; }
+
+            if (doc == null || doc.Editor == null) return false;
+
+            try
+            {
+                ImeController.Initialize();
+
+                var whitelist = OpenCadIme.Core.ConfigManager.LoadCommands();
+                _commandInterceptor = new CommandInterceptor(whitelist);
+                _commandInterceptor.CommandStateChanged += OnCommandStateChanged;
+
+                _focusManager = new FocusHookManager();
+                _focusManager.FocusChanged += OnFocusChanged;
+
+                _hudManager = new UI.HudManager();
+                ImeController.ForceEnglish(GetCadMainWindowHandle());
+
+                if (!isManualCommand && CheckAndSetHudShownFlag())
+                {
+                    _pendingHudVersion = AppConstants.VersionFull;
+                    System.Windows.Forms.Application.Idle += OnCadIdleToShowHud;
+                }
+
+                TryPrintDocumentWelcome(doc);
+
+                _isFullyInitialized = true;
+                if (_hasHookedStartupEvents)
+                {
+                    Application.DocumentManager.DocumentBecameCurrent -= OnStartupEvent;
+                    Application.DocumentManager.DocumentCreated -= OnStartupEvent;
+                    Application.SystemVariableChanged -= OnStartupEvent;
+                    _hasHookedStartupEvents = false;
+                }
+
+                Logger.Info("PluginMain", "跨版本安全初始化圆满完成！");
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                Logger.Error("PluginMain", "核心初始化异常，等待下次重试", ex);
+                _isFullyInitialized = false;
                 return false;
             }
         }
 
-        /// <summary>
-        /// 清理已销毁文档的状态记录
-        /// </summary>
-        private void CleanupDisposedDocStates()
+        private void OnCadIdleToShowHud(object sender, EventArgs e)
         {
-            lock (_textCmdLock)
+            System.Windows.Forms.Application.Idle -= OnCadIdleToShowHud;
+
+            if (_hudManager != null && !string.IsNullOrEmpty(_pendingHudVersion))
             {
-                List<Document> toRemove = new List<Document>();
-                foreach (var kvp in _textCommandActiveDocs)
+                try
                 {
-                    if (kvp.Key == null || kvp.Key.IsDisposed)
+                    if (Application.DocumentManager.Count > 0)
                     {
-                        toRemove.Add(kvp.Key);
+                        Document doc = Application.DocumentManager.MdiActiveDocument;
+                        if (doc != null) _hudManager.ShowWelcomeMessage(doc, _pendingHudVersion);
                     }
                 }
-                foreach (var doc in toRemove)
+                catch (System.Exception ex)
                 {
-                    _textCommandActiveDocs.Remove(doc);
+                    Logger.Error("PluginMain", "HUD 延迟挂载失败", ex);
                 }
             }
         }
-        #endregion
-        #endregion
-        #region HUD 欢迎界面与自定义命令
-        private void OnApplicationIdle(object sender, EventArgs e)
+
+        private void OnCommandStateChanged(object sender, EventArgs e)
         {
+            if (!_isPluginEnabled || !_isFullyInitialized) return;
+
+            CommandCategory activeCategory = _commandInterceptor.GetActiveCommandCategory();
+
+            if (activeCategory != CommandCategory.None)
+            {
+                _focusManager.StartListening();
+
+                _isCurrentlyInEditor = false;
+                _hasForcedChineseForThisEditor = false;
+                _hasForcedEnglishForThisCanvas = false;
+                _lastProcessedHwnd = IntPtr.Zero;
+                _lastProcessedClassName = string.Empty;
+
+                EnforceImeState();
+            }
+            else
+            {
+                _focusManager.StopListening();
+                ImeController.ForceEnglish(GetCadMainWindowHandle());
+                _lastProcessedHwnd = IntPtr.Zero;
+            }
+        }
+
+        private void OnFocusChanged(object sender, EventArgs e)
+        {
+            EnforceImeState();
+        }
+
+        private void EnforceImeState()
+        {
+            // 【核心优化】：增加全覆盖的异常捕获。此函数每秒可能被调用多次，决不能抛出异常阻断 CAD 渲染
             try
             {
-                Document doc = null;
-                try { doc = Application.DocumentManager.MdiActiveDocument; } catch { return; }
-                if (doc != null && doc.Editor != null)
+                if (!_isPluginEnabled || !_isFullyInitialized) return;
+
+                CommandCategory activeCategory = _commandInterceptor.GetActiveCommandCategory();
+                if (activeCategory == CommandCategory.None) return;
+
+                IntPtr currentFocus = _focusManager.CurrentFocusHwnd;
+                if (currentFocus == IntPtr.Zero) currentFocus = GetCadMainWindowHandle();
+
+                System.Text.StringBuilder classNameBuffer = new System.Text.StringBuilder(256);
+                OpenCadIme.Interop.Win32API.GetClassName(currentFocus, classNameBuffer, classNameBuffer.Capacity);
+                string className = classNameBuffer.ToString();
+
+                if (currentFocus == _lastProcessedHwnd && string.Equals(className, _lastProcessedClassName, StringComparison.OrdinalIgnoreCase)) return;
+
+                if (className.IndexOf("AcAutoComp", StringComparison.OrdinalIgnoreCase) >= 0 || className == "#32768") return;
+
+                bool isEditor = IsEditorClass(className);
+
+                if (activeCategory == CommandCategory.Windowed)
                 {
-                    bool shouldShowWelcome = false;
-                    lock (_docLock)
+                    if (isEditor)
                     {
-                        if (_pendingWelcomeDocs.Contains(doc))
+                        _isCurrentlyInEditor = true;
+                        _hasForcedEnglishForThisCanvas = false;
+
+                        if (!_hasForcedChineseForThisEditor)
                         {
-                            _pendingWelcomeDocs.Remove(doc);
-                            shouldShowWelcome = true;
+                            ImeController.ForceChinese(currentFocus);
+                            _hasForcedChineseForThisEditor = true;
                         }
                     }
-                    if (shouldShowWelcome)
+                    else
                     {
-                        // ⭐ v0.3.1 修复：使用统一的版本号常量
-                        _hudManager?.ShowWelcomeMessage(doc, AppConstants.VersionFull);
+                        if (_isCurrentlyInEditor)
+                        {
+                            if (!_hasForcedEnglishForThisCanvas)
+                            {
+                                ImeController.ForceEnglish(currentFocus);
+                                _hasForcedEnglishForThisCanvas = true;
+                            }
+                            _isCurrentlyInEditor = false;
+                            _hasForcedChineseForThisEditor = false;
+                        }
                     }
                 }
+                else if (activeCategory == CommandCategory.Inline)
+                {
+                    if (!_hasForcedChineseForThisEditor)
+                    {
+                        ImeController.ForceChinese(currentFocus);
+                        _hasForcedChineseForThisEditor = true;
+                    }
+                }
+
+                _lastProcessedHwnd = currentFocus;
+                _lastProcessedClassName = className;
             }
-            catch (System.Exception ex) { LogError("OnApplicationIdle", "HUD 欢迎界面展示异常", ex); }
+            catch (System.Exception ex)
+            {
+                Logger.Error("PluginMain", "强制输入法状态时发生异常", ex);
+            }
         }
+
+        private bool IsEditorClass(string className)
+        {
+            if (string.IsNullOrEmpty(className)) return false;
+            string clsLower = className.ToLowerInvariant();
+
+            if (clsLower.Contains("afxframeorview") || clsLower.Contains("acuiview") || clsLower.Contains("afxmdiframe"))
+                return false;
+
+            if (clsLower.Contains("accmdlineui"))
+                return false;
+
+            return true;
+        }
+
         [CommandMethod("TOGGLEAUTOIME")]
         public void ToggleAutoImeCommand()
         {
+            if (!TryInitialize(true))
+            {
+                System.Windows.Forms.MessageBox.Show($"[{AppConstants.PluginShortName}] 核心尚未就绪，或图纸未激活，请稍后再试！", "提示", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Warning);
+                return;
+            }
+
             _isPluginEnabled = !_isPluginEnabled;
             try
             {
                 Document doc = Application.DocumentManager.MdiActiveDocument;
                 if (doc != null && doc.Editor != null)
-                    doc.Editor.WriteMessage("\n>>> [浅醉·墨语] CAD Auto IME 已 " + (_isPluginEnabled ? "开启" : "关闭") + " <<<\n");
+                {
+                    doc.Editor.WriteMessage($"\n>>> [{AppConstants.PluginShortName}] 已 {(_isPluginEnabled ? "开启" : "关闭")} <<<\n");
+                }
+
+                if (!_isPluginEnabled)
+                {
+                    _focusManager?.StopListening();
+                    ImeController.ForceEnglish(GetCadMainWindowHandle());
+                }
+                else
+                {
+                    OnCommandStateChanged(this, EventArgs.Empty);
+                }
             }
-            catch (System.Exception ex) { LogError("ToggleAutoImeCommand", "切换开关异常", ex); }
+            catch (System.Exception ex) { Logger.Error("ToggleAutoImeCommand", "状态切换异常", ex); }
         }
+
         [CommandMethod("CUSTOMAUTOIME")]
         public void ShowCustomConfigDialog()
         {
+            if (!TryInitialize(true))
+            {
+                System.Windows.Forms.MessageBox.Show($"[{AppConstants.PluginShortName}] 核心尚未就绪，或图纸未激活，请稍后再试！", "提示", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Warning);
+                return;
+            }
+
             try
             {
-                Document doc = null;
-                try { doc = Application.DocumentManager.MdiActiveDocument; } catch { }
-                using (ConfigForm form = new ConfigForm())
+                Document doc = Application.DocumentManager.MdiActiveDocument;
+
+                if (_hudManager != null)
                 {
-                    System.Windows.Forms.NativeWindow cadWin = new System.Windows.Forms.NativeWindow();
-                    cadWin.AssignHandle(GetCadMainWindowHandle());
-                    if (form.ShowDialog(cadWin) == System.Windows.Forms.DialogResult.OK)
+                    _hudManager.Dispose();
+                    _hudManager = null;
+                }
+
+#if USE_WPF
+                ShowWpfConfigDialogIsolated(doc);
+#else
+                ShowWinFormsConfigDialogIsolated(doc);
+#endif
+                if (_isPluginEnabled)
+                {
+                    OnCommandStateChanged(this, EventArgs.Empty);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"命令执行异常！\n\n原因: {ex.Message}", $"致命错误 - {AppConstants.PluginShortName}", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+            }
+        }
+
+#if USE_WPF
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void ShowWpfConfigDialogIsolated(Document doc)
+        {
+            try
+            {
+                OpenCadIme.UI.ModernWpf.ConfigWindow wpfConfigWindow = new OpenCadIme.UI.ModernWpf.ConfigWindow();
+                bool? result = OpenCadIme.UI.ModernWpf.WindowManager.ShowModal(wpfConfigWindow);
+
+                if (result == true)
+                {
+                    _commandInterceptor?.UpdateWhitelist(OpenCadIme.Core.ConfigManager.LoadCommands());
+                    doc?.Editor?.WriteMessage($"\n>>> [{AppConstants.PluginShortName}] 配置已更新！ <<<\n");
+                }
+            }
+            catch (System.Exception wpfEx)
+            {
+                System.Windows.Forms.MessageBox.Show($"WPF 配置面板构建崩溃！\n\n原因: {wpfEx.Message}\n\n内部错误: {wpfEx.InnerException?.Message}", $"致命错误 - {AppConstants.PluginShortName}", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+            }
+        }
+#else
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void ShowWinFormsConfigDialogIsolated(Document doc)
+        {
+            try
+            {
+                using (OpenCadIme.UI.LegacyForm.ConfigForm form = new OpenCadIme.UI.LegacyForm.ConfigForm())
+                {
+                    System.Windows.Forms.DialogResult dr = System.Windows.Forms.DialogResult.Cancel;
+                    IntPtr hwnd = GetCadMainWindowHandle();
+                    System.Reflection.MethodInfo showModalMethod = typeof(Application).GetMethod("ShowModalDialog", new Type[] { typeof(System.Windows.Forms.Form) });
+
+                    if (showModalMethod != null)
                     {
-                        _whitelistCommands = ConfigManager.LoadCommands();
-                        if (doc != null && doc.Editor != null)
-                            doc.Editor.WriteMessage("\n>>> [浅醉·墨语] 配置已更新，当前共加载 " + ConfigManager.LoadedCustomCount + " 个白名单！ <<<\n");
+                        dr = (System.Windows.Forms.DialogResult)showModalMethod.Invoke(null, new object[] { form });
+                    }
+                    else if (hwnd != IntPtr.Zero)
+                    {
+                        CadWindowWrapper owner = new CadWindowWrapper(hwnd);
+                        dr = form.ShowDialog(owner);
+                    }
+                    else
+                    {
+                        dr = form.ShowDialog();
+                    }
+
+                    if (dr == System.Windows.Forms.DialogResult.OK)
+                    {
+                        _commandInterceptor?.UpdateWhitelist(OpenCadIme.Core.ConfigManager.LoadCommands());
+                        doc?.Editor?.WriteMessage($"\n>>> [{AppConstants.PluginShortName}] 配置已更新！ <<<\n");
                     }
                 }
-                if (_isPluginEnabled) ImeController.ForceEnglish(GetCadMainWindowHandle());
             }
-            catch (System.Exception ex) { LogError("ShowCustomConfigDialog", "配置面板弹出异常", ex); }
+            catch (System.Exception wfEx)
+            {
+                System.Windows.Forms.MessageBox.Show($"传统配置面板加载崩溃！\n\n原因: {wfEx.Message}", $"致命错误 - {AppConstants.PluginShortName}", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+            }
         }
+#endif
+
         private static IntPtr GetCadMainWindowHandle()
         {
-            try { return Application.MainWindow.Handle; }
-            catch { return System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle; }
+            if (_cachedCadHandle != IntPtr.Zero) return _cachedCadHandle;
+            try
+            {
+                if (Application.MainWindow != null && Application.MainWindow.Handle != IntPtr.Zero)
+                {
+                    _cachedCadHandle = Application.MainWindow.Handle;
+                    return _cachedCadHandle;
+                }
+            }
+            catch { }
+
+            try
+            {
+                _cachedCadHandle = System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle;
+                return _cachedCadHandle;
+            }
+            catch { return IntPtr.Zero; }
         }
-        private void LogError(string methodName, string msg, System.Exception ex)
+
+        public void Terminate() { Dispose(); }
+
+        public void Dispose()
         {
-            System.Diagnostics.Debug.WriteLine("[CADAutoIME-" + methodName + "] " + msg + " \n异常信息: " + ex?.Message + "\n堆栈: " + ex?.StackTrace);
+            if (_disposed) return;
+            try
+            {
+                // 【终极修复】：在此处增加安全兜底，防止插件被强杀时闲置事件未注销导致的泄漏
+                System.Windows.Forms.Application.Idle -= OnCadIdleToShowHud;
+
+                AppDomain.CurrentDomain.AssemblyResolve -= CurrentDomain_AssemblyResolve;
+
+                if (Application.DocumentManager != null)
+                {
+                    Application.DocumentManager.DocumentBecameCurrent -= OnDocumentBecameCurrent;
+                }
+
+                if (_hasHookedStartupEvents)
+                {
+                    Application.DocumentManager.DocumentBecameCurrent -= OnStartupEvent;
+                    Application.DocumentManager.DocumentCreated -= OnStartupEvent;
+                    Application.SystemVariableChanged -= OnStartupEvent;
+                    _hasHookedStartupEvents = false;
+                }
+
+                if (_focusManager != null)
+                {
+                    _focusManager.FocusChanged -= OnFocusChanged;
+                    _focusManager.Dispose();
+                }
+
+                _commandInterceptor?.Dispose();
+                _hudManager?.Dispose();
+
+                ImeController.DisposeTsfEngine();
+                _cachedCadHandle = IntPtr.Zero;
+
+                Logger.Info("PluginMain", "插件资源清理完毕，已安全退出。");
+            }
+            catch (System.Exception ex) { Logger.Error("Dispose", "销毁资源时发生异常", ex); }
+            finally { _disposed = true; }
         }
-        #endregion
     }
 }

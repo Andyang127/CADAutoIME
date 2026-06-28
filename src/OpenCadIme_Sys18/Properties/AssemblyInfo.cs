@@ -1,33 +1,16 @@
-﻿using System.Reflection;
-using System.Runtime.CompilerServices;
+﻿using OpenCadIme;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
-// 有关程序集的一般信息由以下
-// 控制。更改这些特性值可修改
-// 与程序集关联的信息。
-[assembly: AssemblyTitle("OpenCadIme_Sys18")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("CAD 2010-2012.dll")]
+[assembly: AssemblyDescription(AppConstants.PluginFullName)]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Andy_127")]
-[assembly: AssemblyProduct("OpenCadIme_Sys18")]
-[assembly: AssemblyCopyright("Copyright © Andy_127 2026")]
+[assembly: AssemblyCompany(AppConstants.AuthorName)]
+[assembly: AssemblyProduct("R18.0_R18.2")]
+[assembly: AssemblyCopyright("Copyright © " + AppConstants.AuthorName + " 2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
-
-// 将 ComVisible 设置为 false 会使此程序集中的类型
-//对 COM 组件不可见。如果需要从 COM 访问此程序集中的类型
-//请将此类型的 ComVisible 特性设置为 true。
 [assembly: ComVisible(false)]
-
-// 如果此项目向 COM 公开，则下列 GUID 用于类型库的 ID
-[assembly: Guid("0c1357bb-4a10-4257-9243-a25339bd6368")]
-
-// 程序集的版本信息由下列四个值组成: 
-//
-//      主版本
-//      次版本
-//      生成号
-//      修订号
-//
-[assembly: AssemblyVersion("0.3.0.0")]
-[assembly: AssemblyFileVersion("0.3.0.0")]
+[assembly: Guid("0C1357BB-4A10-4257-9243-A25339BD6368")]
+[assembly: AssemblyVersion(AppConstants.Version + ".0")]
+[assembly: AssemblyFileVersion(AppConstants.Version + ".0")]
