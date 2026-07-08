@@ -109,7 +109,7 @@ C:\Users\用户名\AppData\Roaming\OpenCadIme\AutoImeCommands.txt
 
 ## CUSTOMAUTOIME 配置面板
 
-<p align="center"><img width="50%" alt="CUSTOMAUTOIME 配置面板" src="https://github.com/user-attachments/assets/852cc81b-381d-4061-a017-647c619b9a25" /></p>
+<p align="center"><img width="50%" alt="CAD Auto IME 配置面板" src="https://github.com/user-attachments/assets/569a0fd1-546d-42e5-87d5-b0cfed172cbb" /></p>
 
 ---
 
@@ -335,7 +335,8 @@ CAD Auto IME/
 | **作者**       | （浅醉·墨语）_Andy127                                             |
 | **性质**       | 个人项目，纯粹的兴趣爱好开源分享                                     |
 | **开发理念** | 极致打磨，服务每一位绘图者，解决最痛点的实际问题 |
-| **反馈渠道** | [@浅醉·墨语](https://v.douyin.com/lGMz8-jzo5U/)                     |
+| **反馈渠道** | @[浅醉·墨语](https://v.douyin.com/lGMz8-jzo5U/)                     |
+
 
 
 *文档版本: v0.4.1 | 更新时间: 2026-07-08*
