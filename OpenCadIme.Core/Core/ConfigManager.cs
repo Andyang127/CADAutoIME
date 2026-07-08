@@ -57,7 +57,6 @@ namespace OpenCadIme.Core
 
                 if (File.Exists(UiConfigManager.ConfigPath))
                 {
-                    // 【致命并发修复】：彻底废弃危险的 File.ReadAllLines，改用带 FileShare.ReadWrite 锁控制的流读取
                     using (FileStream fs = new FileStream(UiConfigManager.ConfigPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
                     {

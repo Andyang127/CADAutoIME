@@ -2,16 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using OpenCadIme; // 引用 AppConstants
+using OpenCadIme;
 
 namespace OpenCadIme.UI
 {
-    /// <summary>
-    /// UI 界面专属配置管理器，负责提供默认命令集与原始文本的磁盘读写
-    /// </summary>
     public static class UiConfigManager
     {
-        // 【核心修复】：使用嵌套的 Path.Combine，兼容 .NET Framework 2.0/3.5 (CAD2007-2011)
         public static readonly string ConfigPath = Path.Combine(
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppConstants.ConfigDirName),
             AppConstants.ConfigFileName
@@ -47,7 +43,6 @@ namespace OpenCadIme.UI
             {
                 if (File.Exists(ConfigPath))
                 {
-                    // 允许系统内多个 CAD 多开并发读写
                     using (FileStream fs = new FileStream(ConfigPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
                     {
@@ -84,13 +79,14 @@ namespace OpenCadIme.UI
             int retries = 3;
 
             try { if (!Directory.Exists(dir)) Directory.CreateDirectory(dir); } catch { return; }
+            string tempFile = ConfigPath + ".tmp";
+            string backupFile = ConfigPath + ".bak";
 
-            // 增加重试机制和文件防并发独占锁
             while (retries > 0)
             {
                 try
                 {
-                    using (FileStream fs = new FileStream(ConfigPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    using (FileStream fs = new FileStream(tempFile, FileMode.Create, FileAccess.Write, FileShare.None))
                     using (StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
                     {
                         sw.WriteLine($"// {AppConstants.PluginShortName} 自定义配置文件 ({AppConstants.VersionDisplay})");
@@ -105,6 +101,15 @@ namespace OpenCadIme.UI
                             }
                         }
                     }
+
+                    if (File.Exists(ConfigPath))
+                    {
+                        File.Replace(tempFile, ConfigPath, backupFile, true);
+                    }
+                    else
+                    {
+                        File.Move(tempFile, ConfigPath);
+                    }
                     break;
                 }
                 catch (IOException)
@@ -115,7 +120,7 @@ namespace OpenCadIme.UI
                 }
                 catch
                 {
-                    break;
+                    break; 
                 }
             }
         }

@@ -1,10 +1,10 @@
 #define MyAppFullName "[浅醉·墨语] CAD Auto IME"
 #define MyAppName "CAD Auto IME"
-#define MyAppVersion "0.4.0"
+#define MyAppVersion "0.4.1"
 #define MyPublisher "Andy_127"
 
 [Setup]
-VersionInfoVersion=0.4.0.0
+VersionInfoVersion=0.4.1.0
 AppId={{9F8E2A1B-4C5D-6E7F-8A9B-0C1D2E3F4A5B}
 PrivilegesRequired=lowest
 AppName={#MyAppFullName}
@@ -21,9 +21,6 @@ SetupIconFile=Logo.ico
 UninstallDisplayIcon={app}\logo.ico
 Compression=lzma2
 SolidCompression=yes
-
-; 【开源合规预留】当你的 copyleft 协议准备好时，只需将 LICENSE.txt 放入目录并取消下方注释
-; LicenseFile=..\LICENSE.txt
 
 [Files]
 ; Sys17 - Sys27 各版本 DLL
@@ -74,7 +71,6 @@ var
   G_DeleteUserData: Boolean;
   G_DeleteOldConfig: Boolean;
 
-// 检测程序是否运行
 function IsAppRunning(const FileName: string): Boolean;
 var
   WbemLocator, WbemService, WbemObjectSet: Variant;
@@ -89,20 +85,39 @@ begin
   end;
 end;
 
-// 从路径中移除字符串
-function RemoveStringFromPath(const FullPath, TargetStr: string): string;
+function RemoveStringFromPath(const FullPath: string; const TargetStr: string): string;
 var
-  Res: string;
+  p: Integer;
+  tempPath, part, resultStr: string;
 begin
-  Res := FullPath;
-  StringChangeEx(Res, ';' + TargetStr, '', True);
-  StringChangeEx(Res, TargetStr + ';', '', True); 
-  StringChangeEx(Res, TargetStr, '', True);
-  StringChangeEx(Res, ';;', ';', True);
-  Result := Res;
+  tempPath := FullPath;
+  resultStr := '';
+  
+  while tempPath <> '' do
+  begin
+    p := Pos(';', tempPath);
+    if p > 0 then
+    begin
+      part := Copy(tempPath, 1, p - 1);
+      tempPath := Copy(tempPath, p + 1, Length(tempPath));
+    end
+    else
+    begin
+      part := tempPath;
+      tempPath := '';
+    end;
+
+    if CompareText(Trim(part), Trim(TargetStr)) <> 0 then
+    begin
+      if resultStr <> '' then
+        resultStr := resultStr + ';';
+      resultStr := resultStr + part;
+    end;
+  end;
+  
+  Result := resultStr;
 end;
 
-// 强制关闭 CAD
 procedure ForceKillCAD();
 var
   ResultCode: Integer;
@@ -112,7 +127,6 @@ begin
   Sleep(2000);
 end;
 
-// 安装初始化
 function InitializeSetup(): Boolean;
 var
   OldVersion, UninstallString, NewVersion: string;
@@ -275,7 +289,6 @@ begin
   end;
 end;
 
-// 安装后写入注册表（自动加载插件并设置受信任位置）
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   AcadKey, RKey, AcadInstKey, VariablesKey, AppKey: string;
@@ -296,7 +309,6 @@ begin
         SysVer := '';
         DllPath := '';
 
-        // 【核心修复】：精准匹配版本代号与实际的 DLL 路径，彻底解决高版本因找不到文件而跳过的 Bug
         if Pos('R17', RNames[i]) > 0 then begin SysVer := '17'; DllPath := InstallPath + '\Sys17\OpenCadIme_Sys17.dll'; end
         else if Pos('R18', RNames[i]) > 0 then begin SysVer := '18'; DllPath := InstallPath + '\Sys18\OpenCadIme_Sys18.dll'; end
         else if Pos('R19', RNames[i]) > 0 then begin SysVer := '19'; DllPath := InstallPath + '\Sys19\OpenCadIme_Sys19.dll'; end

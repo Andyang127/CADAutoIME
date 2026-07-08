@@ -13,7 +13,6 @@ namespace OpenCadIme.Core
             "CADAutoIME_Error.log"
         );
 
-        // 使用内存队列缓冲日志，将磁盘 IO 操作剥离主线程
         private static readonly Queue<string> _logQueue = new Queue<string>();
         private static readonly object _queueLock = new object();
         private static bool _isFlushing = false;
@@ -65,30 +64,37 @@ namespace OpenCadIme.Core
 
                 while (true)
                 {
-                    string entryToLog = null;
+                    List<string> batchToLog = new List<string>();
                     lock (_queueLock)
                     {
                         if (_logQueue.Count > 0)
                         {
-                            entryToLog = _logQueue.Dequeue();
+                            while (_logQueue.Count > 0)
+                            {
+                                batchToLog.Add(_logQueue.Dequeue());
+                            }
                         }
                         else
                         {
                             _isFlushing = false;
-                            return; // 队列空了，退出后台线程
+                            return;
                         }
                     }
 
-                    if (!string.IsNullOrEmpty(entryToLog))
+                    if (batchToLog.Count > 0)
                     {
-                        // 这里在后台线程执行，哪怕硬盘慢如蜗牛，也绝不卡顿 CAD 界面
-                        File.AppendAllText(LogFilePath, entryToLog);
+                        using (StreamWriter sw = new StreamWriter(LogFilePath, true, System.Text.Encoding.UTF8))
+                        {
+                            foreach (string entry in batchToLog)
+                            {
+                                sw.Write(entry); 
+                            }
+                        }
                     }
                 }
             }
             catch
             {
-                // IO 写入失败，解锁标志位
                 lock (_queueLock) { _isFlushing = false; }
             }
         }

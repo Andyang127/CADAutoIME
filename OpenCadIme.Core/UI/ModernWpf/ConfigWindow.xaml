@@ -9,12 +9,7 @@
         WindowStartupLocation="CenterOwner"
         MaxHeight="{Binding Source={x:Static SystemParameters.WorkArea}, Path=Height}">
 
-    <!-- ============================================ -->
-    <!--  样式资源：关闭按钮 + 暗黑主题滚动条          -->
-    <!-- ============================================ -->
     <Window.Resources>
-
-        <!-- 关闭按钮：Windows 11 风格，圆角 + hover 变红 -->
         <Style x:Key="CloseButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="46" />
             <Setter Property="Height" Value="32" />
@@ -52,7 +47,6 @@
             </Setter>
         </Style>
 
-        <!-- 滚动条 Thumb：暗黑主题 -->
         <Style x:Key="DarkScrollThumb" TargetType="Thumb">
             <Setter Property="Background" Value="#686868" />
             <Setter Property="Template">
@@ -72,7 +66,6 @@
             </Setter>
         </Style>
 
-        <!-- 垂直滚动条：暗黑主题 -->
         <Style x:Key="DarkVerticalScrollBar" TargetType="ScrollBar">
             <Setter Property="Width" Value="12" />
             <Setter Property="Template">
@@ -108,7 +101,6 @@
             </Setter>
         </Style>
 
-        <!-- 水平滚动条：暗黑主题 -->
         <Style x:Key="DarkHorizontalScrollBar" TargetType="ScrollBar">
             <Setter Property="Height" Value="12" />
             <Setter Property="Template">
@@ -144,7 +136,6 @@
             </Setter>
         </Style>
 
-        <!-- ScrollViewer：应用暗黑滚动条 -->
         <Style x:Key="DarkScrollViewer" TargetType="ScrollViewer">
             <Setter Property="Template">
                 <Setter.Value>
@@ -199,16 +190,13 @@
             <Grid Grid.Row="0" Margin="0,0,0,15">
                 <StackPanel VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <!-- 赋予名字，以便在后台通过 AppConstants 无硬编码引用 -->
                         <TextBlock x:Name="lblTitle" Text="CAD Auto IME 白名单配置" FontSize="20" FontWeight="Bold" Foreground="White" />
                         <TextBlock x:Name="lblVersion" Text="v0.4.0" FontSize="14" FontStyle="Italic" Foreground="#00D2D3" Margin="8,4,0,0" />
-                        <!-- 新增：更新提示文字，默认隐藏，由后台 UpdateManager 触发显示 -->
                         <TextBlock x:Name="lblCheckUpdate" Text="[发现新版，点击更新]" FontSize="12" Foreground="#28BE50" Margin="10,6,0,0" Cursor="Hand" Visibility="Collapsed" MouseLeftButtonDown="LblCheckUpdate_MouseLeftButtonDown" />
                     </StackPanel>
                     <TextBlock Text="配置列表中的指令，在启动时会自动切换为中文输入法。" Foreground="#AAAAAA" FontSize="12" />
                 </StackPanel>
 
-                <!-- 优化后的关闭按钮：Win11 风格 -->
                 <Button Style="{StaticResource CloseButtonStyle}"
                         HorizontalAlignment="Right" VerticalAlignment="Top"
                         Click="BtnClose_Click" />

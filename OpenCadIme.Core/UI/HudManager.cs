@@ -5,7 +5,6 @@ using System.Drawing;
 using System.Windows.Forms;
 using OpenCadIme.Interop;
 
-// 解决 Application 歧义：别名区分 CAD 和 WinForms
 using CadApp = Autodesk.AutoCAD.ApplicationServices.Application;
 using WinFormsApp = System.Windows.Forms.Application;
 
@@ -39,9 +38,6 @@ namespace OpenCadIme.UI
                 get
                 {
                     CreateParams cp = base.CreateParams;
-                    // 0x08000000 = WS_EX_NOACTIVATE (防抢焦点)
-                    // 0x00080000 = WS_EX_LAYERED (分层透明)
-                    // 0x00000020 = WS_EX_TRANSPARENT (鼠标穿透)
                     cp.ExStyle |= 0x08000000 | 0x00080000 | 0x00000020;
                     return cp;
                 }
@@ -70,7 +66,6 @@ namespace OpenCadIme.UI
             doc.Editor.WriteMessage("💡 输入命令 CUSTOMAUTOIME 可调出白名单配置面板\n");
             doc.Editor.WriteMessage("====================================================\n");
 
-            // 【终极修复】：删除了此处的冗余且冲突的注册表写入逻辑，状态判断全权交由 PluginMain 处理。
             ShowHudWelcomeWindow(appVersion);
         }
 
@@ -82,7 +77,9 @@ namespace OpenCadIme.UI
 
                 _hudForm = new HudForm();
                 _hudForm.FormBorderStyle = FormBorderStyle.None;
-                _hudForm.BackColor = Color.FromArgb(45, 52, 54);
+                _hudForm.BackColor = Color.Black;
+                _hudForm.TransparencyKey = Color.Black;
+
                 _hudForm.TopMost = true;
                 _hudForm.ShowInTaskbar = false;
                 _hudForm.StartPosition = FormStartPosition.Manual;
@@ -177,6 +174,9 @@ namespace OpenCadIme.UI
             if (_hudForm == null) return;
 
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            e.Graphics.Clear(Color.Black);
+
             using (System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath())
             {
                 int r = 16, w = _hudForm.Width - 1, h = _hudForm.Height - 1;
@@ -185,8 +185,15 @@ namespace OpenCadIme.UI
                 path.AddArc(w - r, h - r, r, r, 0, 90);
                 path.AddArc(0, h - r, r, r, 90, 90);
                 path.CloseAllFigures();
+                using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(45, 52, 54)))
+                {
+                    e.Graphics.FillPath(bgBrush, path);
+                }
+
                 using (Pen pen = new Pen(Color.FromArgb(90, 90, 90), 1.5f))
+                {
                     e.Graphics.DrawPath(pen, path);
+                }
             }
         }
 
@@ -200,12 +207,6 @@ namespace OpenCadIme.UI
             {
                 _hudForm.BeginInvoke(new MethodInvoker(delegate
                 {
-                    IntPtr hrgn = Win32API.CreateRoundRectRgn(0, 0, _hudForm.Width, _hudForm.Height, 16, 16);
-                    Region oldRegion = _hudForm.Region;
-                    _hudForm.Region = Region.FromHrgn(hrgn);
-                    if (oldRegion != null) oldRegion.Dispose();
-                    Win32API.DeleteObject(hrgn);
-
                     IntPtr cadHandle = GetCadMainWindowHandle();
                     Point targetPos = CalculateHudTargetPosition(cadHandle, _hudForm.Width, _hudForm.Height);
                     _hudForm.Location = targetPos;
@@ -290,12 +291,23 @@ namespace OpenCadIme.UI
             int cadWidth = cadRect.Right - cadRect.Left;
             int cadHeight = cadRect.Bottom - cadRect.Top;
             if (cadWidth <= 0 || cadHeight <= 0) return new Point(fallbackX, fallbackY);
+            float dpiScale = 1.0f;
+            try
+            {
+                using (Graphics g = Graphics.FromHwnd(IntPtr.Zero))
+                {
+                    dpiScale = g.DpiX / 96.0f;
+                }
+            }
+            catch { }
+            int scaledWidth = (int)(realWidth * dpiScale);
+            int scaledHeight = (int)(realHeight * dpiScale);
 
             int targetX = cadRect.Left + (int)(cadWidth * 2.0 / 3.0);
             int targetY = cadRect.Top + (int)(cadHeight * 2.0 / 3.0);
 
-            if (targetX + realWidth > cadRect.Right) targetX = cadRect.Right - realWidth - 10;
-            if (targetY + realHeight > cadRect.Bottom) targetY = cadRect.Bottom - realHeight - 10;
+            if (targetX + scaledWidth > cadRect.Right) targetX = cadRect.Right - scaledWidth - 10;
+            if (targetY + scaledHeight > cadRect.Bottom) targetY = cadRect.Bottom - scaledHeight - 10;
 
             return new Point(targetX, targetY);
         }

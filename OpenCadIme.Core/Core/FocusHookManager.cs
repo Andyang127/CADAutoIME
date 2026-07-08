@@ -3,9 +3,6 @@ using OpenCadIme.Interop;
 
 namespace OpenCadIme.Core
 {
-    /// <summary>
-    /// 焦点事件管理器 (惰性挂载版)
-    /// </summary>
     public class FocusHookManager : IDisposable
     {
         private IntPtr _winEventHook = IntPtr.Zero;
@@ -21,12 +18,8 @@ namespace OpenCadIme.Core
         {
             _currentProcessId = Win32API.GetCurrentProcessId();
             _hookDelegate = new Win32API.WinEventDelegate(WinEventCallback);
-            // 初始化时保持绝对静默，不挂载钩子
         }
 
-        /// <summary>
-        /// 按需唤醒：仅在白名单命令执行时调用
-        /// </summary>
         public void StartListening()
         {
             if (_disposed || _winEventHook != IntPtr.Zero) return;
@@ -47,16 +40,13 @@ namespace OpenCadIme.Core
             }
         }
 
-        /// <summary>
-        /// 阅后即焚：命令结束后立即调用，释放资源
-        /// </summary>
         public void StopListening()
         {
             if (_winEventHook != IntPtr.Zero)
             {
                 Win32API.UnhookWinEvent(_winEventHook);
                 _winEventHook = IntPtr.Zero;
-                CurrentFocusHwnd = IntPtr.Zero; // 清理状态缓存
+                CurrentFocusHwnd = IntPtr.Zero;
             }
         }
 

@@ -52,11 +52,9 @@ namespace OpenCadIme.UI.ModernWpf
 
             UpdateManager.CheckForUpdates(latestVersion =>
             {
-                // 【核心优化】：使用 InvokeAsync 防止窗口被提前关闭导致的 COMException 崩溃
                 this.Dispatcher.InvokeAsync(() =>
                 {
-                    // 确保执行时，窗口依然存活
-                    if (!this.IsLoaded) return;
+                    if (!this.IsLoaded || !this.IsVisible) return;
 
                     lblCheckUpdate.Visibility = Visibility.Visible;
                     lblCheckUpdate.Text = $"[发现新版本: {latestVersion}]";

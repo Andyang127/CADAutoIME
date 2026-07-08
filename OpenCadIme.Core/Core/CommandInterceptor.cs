@@ -25,7 +25,7 @@ namespace OpenCadIme.Core
                 foreach (Document doc in Application.DocumentManager) AttachEvents(doc);
                 Application.DocumentManager.DocumentCreated += OnDocumentCreated;
                 Application.DocumentManager.DocumentBecameCurrent += OnDocumentBecameCurrent;
-                Application.DocumentManager.DocumentDestroyed += OnDocumentDestroyed;
+                Application.DocumentManager.DocumentToBeDestroyed += OnDocumentToBeDestroyed;
             }
             catch (Exception ex) { Logger.Error("CommandInterceptor", "初始化图纸生命周期监听失败", ex); }
         }
@@ -40,6 +40,8 @@ namespace OpenCadIme.Core
         {
             try
             {
+                if (Application.DocumentManager.Count == 0) return CommandCategory.None;
+
                 Document doc = Application.DocumentManager.MdiActiveDocument;
                 if (doc == null || doc.IsDisposed) return CommandCategory.None;
 
@@ -62,7 +64,7 @@ namespace OpenCadIme.Core
             CommandStateChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void OnDocumentDestroyed(object sender, DocumentDestroyedEventArgs e)
+        private void OnDocumentToBeDestroyed(object sender, DocumentCollectionEventArgs e)
         {
             lock (_docLock)
             {
@@ -78,7 +80,7 @@ namespace OpenCadIme.Core
                             continue;
                         }
 
-                        if (!string.IsNullOrEmpty(e.FileName) && string.Equals(doc.Name, e.FileName, StringComparison.OrdinalIgnoreCase))
+                        if (e.Document != null && doc.UnmanagedObject == e.Document.UnmanagedObject)
                         {
                             DetachEventsUnsafe(doc);
                             _hookedDocs.RemoveAt(i);
@@ -106,7 +108,6 @@ namespace OpenCadIme.Core
                     doc.CommandCancelled += OnCommandEnded;
                     doc.CommandFailed += OnCommandEnded;
 
-                    // 完美级补充：支持原生 LISP 函数的输入法接管
                     doc.LispWillStart += OnLispWillStart;
                     doc.LispEnded += OnLispEnded;
                     doc.LispCancelled += OnLispEnded;
@@ -283,23 +284,27 @@ namespace OpenCadIme.Core
             if (_disposed) return;
             try
             {
-                Application.DocumentManager.DocumentCreated -= OnDocumentCreated;
-                Application.DocumentManager.DocumentBecameCurrent -= OnDocumentBecameCurrent;
-                Application.DocumentManager.DocumentDestroyed -= OnDocumentDestroyed;
+                try
+                {
+                    Application.DocumentManager.DocumentCreated -= OnDocumentCreated;
+                    Application.DocumentManager.DocumentBecameCurrent -= OnDocumentBecameCurrent;
+                    Application.DocumentManager.DocumentToBeDestroyed -= OnDocumentToBeDestroyed;
+                }
+                catch { }
 
                 lock (_docLock)
                 {
                     for (int i = _hookedDocs.Count - 1; i >= 0; i--)
                     {
-                        if (_hookedDocs[i] != null && !_hookedDocs[i].IsDisposed) DetachEventsUnsafe(_hookedDocs[i]);
+                        if (_hookedDocs[i] != null && !_hookedDocs[i].IsDisposed)
+                            DetachEventsUnsafe(_hookedDocs[i]);
                     }
                     _hookedDocs.Clear();
                 }
                 lock (_textCmdLock) { _textCommandActiveDocs.Clear(); }
             }
-            catch (Exception ex)
+            catch
             {
-                Logger.Error("CommandInterceptor", "销毁资源时发生异常", ex);
             }
             finally { _disposed = true; }
         }

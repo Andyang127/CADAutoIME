@@ -54,10 +54,6 @@ namespace OpenCadIme.Interop
 
         [DllImport("user32.dll", EntryPoint = "GetWindowLongPtr")]
         private static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
-
-        /// <summary>
-        /// 获取窗口信息（32/64 位自适应版）
-        /// </summary>
         public static IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex)
         {
             if (IntPtr.Size == 8) return GetWindowLongPtr64(hWnd, nIndex);
@@ -69,27 +65,15 @@ namespace OpenCadIme.Interop
 
         [DllImport("user32.dll", EntryPoint = "SetWindowLongPtr")]
         private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
-
-        /// <summary>
-        /// 设置窗口信息（32/64 位自适应版）
-        /// </summary>
         public static IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong)
         {
             if (IntPtr.Size == 8) return SetWindowLongPtr64(hWnd, nIndex, dwNewLong);
             else return SetWindowLongPtr32(hWnd, nIndex, dwNewLong);
         }
-
-        /// <summary>
-        /// 兼容封装：获取窗口整数值（如扩展样式），内部自动适配 32/64 位
-        /// </summary>
         public static int GetWindowLong(IntPtr hWnd, int nIndex)
         {
             return GetWindowLongPtr(hWnd, nIndex).ToInt32();
         }
-
-        /// <summary>
-        /// 兼容封装：设置窗口整数值（如扩展样式），内部自动适配 32/64 位
-        /// </summary>
         public static int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong)
         {
             return SetWindowLongPtr(hWnd, nIndex, new IntPtr(dwNewLong)).ToInt32();

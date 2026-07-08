@@ -29,9 +29,8 @@ namespace OpenCadIme
 
         private HashSet<IntPtr> _welcomedDocs = new HashSet<IntPtr>();
         private string _pendingHudVersion = null;
-
-        // 【核心优化】：主窗口句柄缓存，避免高频调用 Process.GetCurrentProcess() 导致 CPU 飙升
         private static IntPtr _cachedCadHandle = IntPtr.Zero;
+        private bool _isTerminating = false;
 
         internal class CadWindowWrapper : System.Windows.Forms.IWin32Window
         {
@@ -50,6 +49,7 @@ namespace OpenCadIme
                 if (Application.DocumentManager != null)
                 {
                     Application.DocumentManager.DocumentBecameCurrent += OnDocumentBecameCurrent;
+                    Application.DocumentManager.DocumentToBeDestroyed += OnDocumentToBeDestroyed;
                 }
 
                 if (TryInitialize(false)) return;
@@ -91,6 +91,18 @@ namespace OpenCadIme
             }
         }
 
+        private void OnDocumentToBeDestroyed(object sender, DocumentCollectionEventArgs e)
+        {
+            try
+            {
+                if (e.Document != null && e.Document.UnmanagedObject != IntPtr.Zero)
+                {
+                    _welcomedDocs.Remove(e.Document.UnmanagedObject);
+                }
+            }
+            catch { }
+        }
+
         private void TryPrintDocumentWelcome(Document doc)
         {
             if (doc == null || doc.Editor == null || !_isPluginEnabled) return;
@@ -120,7 +132,6 @@ namespace OpenCadIme
             try
             {
                 string cadVersion = Application.Version.ToString();
-                // 【洁癖级修复】：统一采用 AppConstants 中的标准注册表路径，终结混乱
                 string regPath = $@"{AppConstants.RegistryPath}\WelcomeHud";
 
                 using (var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(regPath))
@@ -138,7 +149,7 @@ namespace OpenCadIme
             }
             catch
             {
-                return false; // 如果因权限问题读写失败，默认不再显示，以免惹怒用户
+                return false;
             }
         }
 
@@ -252,7 +263,6 @@ namespace OpenCadIme
 
         private void EnforceImeState()
         {
-            // 【核心优化】：增加全覆盖的异常捕获。此函数每秒可能被调用多次，决不能抛出异常阻断 CAD 渲染
             try
             {
                 if (!_isPluginEnabled || !_isFullyInitialized) return;
@@ -479,29 +489,39 @@ namespace OpenCadIme
             catch { return IntPtr.Zero; }
         }
 
-        public void Terminate() { Dispose(); }
+        public void Terminate()
+        {
+            _isTerminating = true; 
+            Dispose();
+        }
 
         public void Dispose()
         {
             if (_disposed) return;
             try
             {
-                // 【终极修复】：在此处增加安全兜底，防止插件被强杀时闲置事件未注销导致的泄漏
                 System.Windows.Forms.Application.Idle -= OnCadIdleToShowHud;
-
                 AppDomain.CurrentDomain.AssemblyResolve -= CurrentDomain_AssemblyResolve;
 
-                if (Application.DocumentManager != null)
+                if (!_isTerminating)
                 {
-                    Application.DocumentManager.DocumentBecameCurrent -= OnDocumentBecameCurrent;
-                }
+                    try
+                    {
+                        if (Application.DocumentManager != null)
+                        {
+                            Application.DocumentManager.DocumentBecameCurrent -= OnDocumentBecameCurrent;
+                            Application.DocumentManager.DocumentToBeDestroyed -= OnDocumentToBeDestroyed;
+                        }
 
-                if (_hasHookedStartupEvents)
-                {
-                    Application.DocumentManager.DocumentBecameCurrent -= OnStartupEvent;
-                    Application.DocumentManager.DocumentCreated -= OnStartupEvent;
-                    Application.SystemVariableChanged -= OnStartupEvent;
-                    _hasHookedStartupEvents = false;
+                        if (_hasHookedStartupEvents)
+                        {
+                            Application.DocumentManager.DocumentBecameCurrent -= OnStartupEvent;
+                            Application.DocumentManager.DocumentCreated -= OnStartupEvent;
+                            Application.SystemVariableChanged -= OnStartupEvent;
+                            _hasHookedStartupEvents = false;
+                        }
+                    }
+                    catch { }
                 }
 
                 if (_focusManager != null)
@@ -513,12 +533,22 @@ namespace OpenCadIme
                 _commandInterceptor?.Dispose();
                 _hudManager?.Dispose();
 
-                ImeController.DisposeTsfEngine();
+                try
+                {
+                    ImeController.DisposeTsfEngine();
+                }
+                catch { }
+
                 _cachedCadHandle = IntPtr.Zero;
 
-                Logger.Info("PluginMain", "插件资源清理完毕，已安全退出。");
+                if (!_isTerminating)
+                {
+                    Logger.Info("PluginMain", "插件资源清理完毕，已安全退出。");
+                }
             }
-            catch (System.Exception ex) { Logger.Error("Dispose", "销毁资源时发生异常", ex); }
+            catch
+            {
+            }
             finally { _disposed = true; }
         }
     }

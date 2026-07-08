@@ -14,7 +14,6 @@ namespace OpenCadIme.Core
 
         public static void CheckForUpdates(Action<string, bool> onUpdateAvailable, string skippedPrereleaseVersion)
         {
-            // 独立后台线程，彻底避免 DNS 阻塞导致线程池枯竭假死
             Thread updateThread = new Thread(new ThreadStart(delegate
             {
                 try
@@ -69,7 +68,7 @@ namespace OpenCadIme.Core
             }));
 
             updateThread.IsBackground = true;
-            updateThread.Priority = ThreadPriority.Lowest; // 最低优先级，坚决不抢占画图性能
+            updateThread.Priority = ThreadPriority.Lowest; 
             updateThread.Start();
         }
 

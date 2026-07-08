@@ -593,7 +593,7 @@
         <header>
             <span class="brand-badge"><i class="fa-solid fa-shield-halved"></i>【 浅醉 · 墨语】出品</span>
             <h1>CAD输入法自动切换助手</h1>
-            <p><i class="fa-solid fa-file-code"></i> CAD Auto IME | 技术文档 (v0.4.0 版)</p>
+            <p><i class="fa-solid fa-file-code"></i> CAD Auto IME | 技术文档 (v0.4.1 版)</p>
         </header>
 
         <!-- 部署通知区块 -->
@@ -613,7 +613,7 @@
         <section id="overview">
             <h2><i class="fa-solid fa-bullseye"></i> 产品概述</h2>
             <h3>🔹 产品定位</h3>
-            <p><strong>CAD Auto IME</strong> 是一款专为工程设计领域打造的<strong>底层系统级效率增强组件</strong>。v0.4.0 版，跨越了 WinForms 与 WPF 的技术鸿沟，修复了极端环境下的加载死锁，为全系 AutoCAD 提供 0 崩溃的体验。</p>
+            <p><strong>CAD Auto IME</strong> 是一款专为工程设计领域打造的<strong>底层系统级效率增强组件</strong>。v0.4.1 版，在跨越技术鸿沟的基础上，深度修复了底层状态与高分屏渲染，为全系 AutoCAD 提供极致稳定、0 崩溃的体验。</p>
 
             <h3>🔹 解决的核心问题</h3>
             <div class="table-container">
@@ -622,7 +622,7 @@
                         <tr>
                             <th style="width: 25%">使用场景</th>
                             <th style="width: 35%">传统操作方式 (含旧版插件)</th>
-                            <th style="width: 40%">本工具解决方案 (v0.4.0 版)</th>
+                            <th style="width: 40%">本工具解决方案 (v0.4.1 版)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -653,7 +653,7 @@
 
         <!-- 核心特性 -->
         <section id="features">
-            <h2><i class="fa-solid fa-bolt"></i> v0.4.0 版核心特性</h2>
+            <h2><i class="fa-solid fa-bolt"></i> v0.4.1 版核心特性</h2>
             <p>本次版本全面攻克了长期困扰业界插件的“跨版本 API 分裂”与“启动卡死”难题：</p>
 
             <h3><i class="fa-solid fa-shield-heart"></i> 1. 跨世代极客加载引擎 (Anti-Freeze)</h3>
@@ -772,7 +772,7 @@
             <p><strong>A</strong>：已经彻底解决此问题。每张图纸拥有独立的输入法状态机，完全物理隔离。在图纸 A 中输入文字切到中文，切到图纸 B 画线时自动恢复英文，互不干扰。</p>
             
             <h3>Q4：为什么安装/卸载时一直提示 CAD 在运行，点击强制关闭也没用？</h3>
-            <p><strong>A</strong>：这是因为你的 AutoCAD 占用了系统管理员权限，或者残留了隐形的 <code>accoreconsole.exe</code> 进程，导致标准安装包无法强杀。<strong>v0.4.0 安装包已引入“强行突破”防死锁机制</strong>，如果你确认已经手动关闭了 CAD，只需在弹窗提示中点击“是（强行继续）”，即可无视系统权限拦截，完美完成安装与卸载。</p>
+            <p><strong>A</strong>：这是因为你的 AutoCAD 占用了系统管理员权限，或者残留了隐形的 <code>accoreconsole.exe</code> 进程，导致标准安装包无法强杀。<strong>v0.4.1 安装包已引入“强行突破”防死锁机制</strong>，如果你确认已经手动关闭了 CAD，只需在弹窗提示中点击“是（强行继续）”，即可无视系统权限拦截，完美完成安装与卸载。</p>
         </section>
 
         <!-- 卸载 -->
@@ -794,8 +794,24 @@
                 <div class="timeline-item active">
                     <div class="timeline-marker"></div>
                     <div class="timeline-title">
-                        <span>🚀 v0.4.0 版</span>
+                        <span>🚀 v0.4.1 版</span>
                         <span class="badge-update">本次更新</span>
+                    </div>
+                    <div class="timeline-content">
+                        <ul>
+                            <li><strong>⌨️【核心修复】状态精准捕获</strong>：修复现代输入法按 Shift 键切换中英文时，底层状态误判导致无法自动切换的致命 Bug，实现 <code>OpenStatus</code> 与 <code>ConversionStatus</code> 双轨并行校验。</li>
+                            <li><strong>💥【底层维稳】静默安全退出</strong>：彻底解决低版本 CAD 退出时发出“叮”声报错及零文档状态下的底层崩溃，智能屏蔽宿主销毁期的无效句柄访问，保证程序纯净关闭。</li>
+                            <li><strong>🎨【UI 渲染】4K 高分屏与抗锯齿</strong>：重构 HUD 悬浮窗透明渲染逻辑，彻底消除圆角紫红毛边；引入底层 DPI 缩放因子补偿，完美适配 4K 高分辨率显示器，弹窗精准定位不偏移。</li>
+                            <li><strong>🚀【极速响应】内存释放与 IO 降载</strong>：修复长周期运行（图纸反复开闭）引发的句柄内存泄漏；重构错误日志模块为锁内批量写入，极端高频操作下彻底消除磁盘争用与 CPU 峰值。</li>
+                            <li><strong>🔒【数据防线】原子级读写机制</strong>：重构配置文件的生成逻辑，采用“临时文件创建 -> 瞬间无损替换”的原子策略，杜绝 CAD 多实例并发时导致的文件锁死或损坏；优化卸载算法，精准保护系统环境变量。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-title">
+                        <span>📦 v0.4.0 版</span>
                     </div>
                     <div class="timeline-content">
                         <ul>
@@ -895,7 +911,7 @@
             <p><strong>感谢你选择 CAD 输入法自动切换助手</strong></p>
             <p style="font-style: italic;">让每一位设计师都能专注于创作，而非繁琐的输入法切换</p>
             <p style="font-size: 11px; margin-top: 16px; color: #94a3b8;">
-                文档版本：v0.4.0 | 更新时间：2026 年 06 月 27 日 | 适配系统：Windows 7/10/11 (64 位)
+                文档版本：v0.4.1 | 更新时间：2026 年 07 月 08 日 | 适配系统：Windows 7/10/11 (64 位)
             </p>
         </footer>
     </main>

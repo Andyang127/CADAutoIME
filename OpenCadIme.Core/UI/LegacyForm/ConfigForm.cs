@@ -259,15 +259,21 @@ namespace OpenCadIme.UI.LegacyForm
 
             UpdateManager.CheckForUpdates(latestVersion =>
             {
-                if (!this.IsDisposed && this.IsHandleCreated)
+                try
                 {
-                    this.Invoke(new MethodInvoker(() =>
+                    if (this.IsHandleCreated && !this.IsDisposed)
                     {
-                        lblCheckUpdate.Visible = true;
-                        lblCheckUpdate.Text = $"[发现新版本: {latestVersion}]";
-                        lblCheckUpdate.Tag = latestVersion;
-                    }));
+                        this.BeginInvoke(new MethodInvoker(() =>
+                        {
+                            if (this.IsDisposed || !this.IsHandleCreated) return;
+
+                            lblCheckUpdate.Visible = true;
+                            lblCheckUpdate.Text = $"[发现新版: {latestVersion}]";
+                            lblCheckUpdate.Tag = latestVersion;
+                        }));
+                    }
                 }
+                catch { /* 窗体若已在半销毁状态，静默吃掉异常，绝不允许崩溃蔓延到 CAD */ }
             });
         }
 

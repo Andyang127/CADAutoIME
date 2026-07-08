@@ -15,7 +15,6 @@ namespace OpenCadIme
             if (_tsfThreadMgrObj != null) return;
             try
             {
-                // 【核心修复】：防呆设计。强制校验 TSF 组件必须在主线程 (STA) 环境下初始化。
                 if (System.Threading.Thread.CurrentThread.GetApartmentState() != System.Threading.ApartmentState.STA)
                 {
                     Logger.Error("ImeController", "TSF 引擎初始化被拒绝：必须在主线程 (STA) 中执行！");
@@ -40,8 +39,18 @@ namespace OpenCadIme
                 if (activeHimc != IntPtr.Zero)
                 {
                     bool isOpen = Win32API.ImmGetOpenStatus(activeHimc);
+                    uint conversion, sentence;
+                    bool hasConv = Win32API.ImmGetConversionStatus(activeHimc, out conversion, out sentence);
                     Win32API.ImmReleaseContext(hwnd, activeHimc);
-                    return isOpen == targetIsChinese;
+
+                    if (targetIsChinese)
+                    {
+                        return isOpen && hasConv && ((conversion & Win32API.IME_CMODE_NATIVE) != 0);
+                    }
+                    else
+                    {
+                        return !isOpen || (hasConv && ((conversion & Win32API.IME_CMODE_NATIVE) == 0));
+                    }
                 }
             }
             catch { }
