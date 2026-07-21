@@ -9,7 +9,7 @@ using OpenCadIme.Core;
 [assembly: ExtensionApplication(typeof(OpenCadIme.PluginMain))]
 namespace OpenCadIme
 {
-    public class PluginMain : IExtensionApplication, IDisposable
+    public class PluginMain : IExtensionApplication, IDisposable, System.Windows.Forms.IMessageFilter
     {
         private FocusHookManager _focusManager;
         private CommandInterceptor _commandInterceptor;
@@ -20,17 +20,13 @@ namespace OpenCadIme
         private bool _isFullyInitialized = false;
         private bool _hasHookedStartupEvents = false;
 
-        private IntPtr _lastProcessedHwnd = IntPtr.Zero;
-        private string _lastProcessedClassName = string.Empty;
-
-        private bool _isCurrentlyInEditor = false;
-        private bool _hasForcedChineseForThisEditor = false;
-        private bool _hasForcedEnglishForThisCanvas = false;
-
         private HashSet<IntPtr> _welcomedDocs = new HashSet<IntPtr>();
         private string _pendingHudVersion = null;
         private static IntPtr _cachedCadHandle = IntPtr.Zero;
         private bool _isTerminating = false;
+        private int _lastDoubleClickTick = 0;
+        private const int WM_LBUTTONDBLCLK = 0x0203;
+        private const int WM_NCLBUTTONDBLCLK = 0x00A3;
 
         internal class CadWindowWrapper : System.Windows.Forms.IWin32Window
         {
@@ -113,7 +109,7 @@ namespace OpenCadIme
                 {
                     doc.Editor.WriteMessage("\n");
                     doc.Editor.WriteMessage("==============================================================\n");
-                    doc.Editor.WriteMessage($"[[浅醉·墨语]CAD Auto IME 输入法自动切换程序]{AppConstants.VersionDisplay}已成功启动！\n");
+                    doc.Editor.WriteMessage($"[光雾山绘图定制]{AppConstants.VersionDisplay}已成功启动！\n");
                     if (ConfigManager.LoadedCustomCount > 0)
                         doc.Editor.WriteMessage(">>> 已成功从 AutoImeCommands.txt 载入" + ConfigManager.LoadedCustomCount + "个自定义白名单命令 <<<\n");
                     doc.Editor.WriteMessage("------------------------------------------------------------\n");
@@ -177,9 +173,14 @@ namespace OpenCadIme
 
                 _focusManager = new FocusHookManager();
                 _focusManager.FocusChanged += OnFocusChanged;
+                _focusManager.StartListening();
+
+                try { System.Windows.Forms.Application.AddMessageFilter(this); } catch { }
 
                 _hudManager = new UI.HudManager();
-                ImeController.ForceEnglish(GetCadMainWindowHandle());
+
+                _isFullyInitialized = true;
+                EnforceImeState();
 
                 if (!isManualCommand && CheckAndSetHudShownFlag())
                 {
@@ -189,7 +190,6 @@ namespace OpenCadIme
 
                 TryPrintDocumentWelcome(doc);
 
-                _isFullyInitialized = true;
                 if (_hasHookedStartupEvents)
                 {
                     Application.DocumentManager.DocumentBecameCurrent -= OnStartupEvent;
@@ -198,7 +198,7 @@ namespace OpenCadIme
                     _hasHookedStartupEvents = false;
                 }
 
-                Logger.Info("PluginMain", "跨版本安全初始化圆满完成！");
+                Logger.Info("PluginMain", "基于行为时序的高级状态机已启动 (向下兼容旧版)！");
                 return true;
             }
             catch (System.Exception ex)
@@ -207,6 +207,18 @@ namespace OpenCadIme
                 _isFullyInitialized = false;
                 return false;
             }
+        }
+
+        public bool PreFilterMessage(ref System.Windows.Forms.Message m)
+        {
+            if (m.Msg == WM_LBUTTONDBLCLK || m.Msg == WM_NCLBUTTONDBLCLK)
+            {
+                if (_isPluginEnabled && _isFullyInitialized)
+                {
+                    _lastDoubleClickTick = Environment.TickCount;
+                }
+            }
+            return false;
         }
 
         private void OnCadIdleToShowHud(object sender, EventArgs e)
@@ -233,27 +245,7 @@ namespace OpenCadIme
         private void OnCommandStateChanged(object sender, EventArgs e)
         {
             if (!_isPluginEnabled || !_isFullyInitialized) return;
-
-            CommandCategory activeCategory = _commandInterceptor.GetActiveCommandCategory();
-
-            if (activeCategory != CommandCategory.None)
-            {
-                _focusManager.StartListening();
-
-                _isCurrentlyInEditor = false;
-                _hasForcedChineseForThisEditor = false;
-                _hasForcedEnglishForThisCanvas = false;
-                _lastProcessedHwnd = IntPtr.Zero;
-                _lastProcessedClassName = string.Empty;
-
-                EnforceImeState();
-            }
-            else
-            {
-                _focusManager.StopListening();
-                ImeController.ForceEnglish(GetCadMainWindowHandle());
-                _lastProcessedHwnd = IntPtr.Zero;
-            }
+            EnforceImeState();
         }
 
         private void OnFocusChanged(object sender, EventArgs e)
@@ -261,85 +253,98 @@ namespace OpenCadIme
             EnforceImeState();
         }
 
+        private bool _isEnforcingIme = false;
+        private static readonly string[] _englishOnlyClasses = { "acautocomp", "#32768", "accmdlineui" };
+        private System.Text.StringBuilder _classNameBuffer = new System.Text.StringBuilder(256);
+
+
         private void EnforceImeState()
         {
+            if (_isEnforcingIme || !_isPluginEnabled || !_isFullyInitialized) return;
+
             try
             {
-                if (!_isPluginEnabled || !_isFullyInitialized) return;
-
-                CommandCategory activeCategory = _commandInterceptor.GetActiveCommandCategory();
-                if (activeCategory == CommandCategory.None) return;
+                _isEnforcingIme = true;
 
                 IntPtr currentFocus = _focusManager.CurrentFocusHwnd;
-                if (currentFocus == IntPtr.Zero) currentFocus = GetCadMainWindowHandle();
+                if (currentFocus == IntPtr.Zero)
+                    currentFocus = ImeController.GetRealFocusWindow(GetCadMainWindowHandle());
+                _classNameBuffer.Length = 0;
+                OpenCadIme.Interop.Win32API.GetClassName(currentFocus, _classNameBuffer, _classNameBuffer.Capacity);
+                string clsName = _classNameBuffer.ToString();
 
-                System.Text.StringBuilder classNameBuffer = new System.Text.StringBuilder(256);
-                OpenCadIme.Interop.Win32API.GetClassName(currentFocus, classNameBuffer, classNameBuffer.Capacity);
-                string className = classNameBuffer.ToString();
-
-                if (currentFocus == _lastProcessedHwnd && string.Equals(className, _lastProcessedClassName, StringComparison.OrdinalIgnoreCase)) return;
-
-                if (className.IndexOf("AcAutoComp", StringComparison.OrdinalIgnoreCase) >= 0 || className == "#32768") return;
-
-                bool isEditor = IsEditorClass(className);
-
-                if (activeCategory == CommandCategory.Windowed)
+                bool forceEnglishClass = false;
+                foreach (var cls in _englishOnlyClasses)
                 {
-                    if (isEditor)
+                    if (clsName.IndexOf(cls, StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        _isCurrentlyInEditor = true;
-                        _hasForcedEnglishForThisCanvas = false;
+                        forceEnglishClass = true;
+                        break;
+                    }
+                }
 
-                        if (!_hasForcedChineseForThisEditor)
+                if (forceEnglishClass)
+                {
+                    ImeController.ForceEnglish(currentFocus);
+                    return;
+                }
+
+                CommandCategory activeCategory = _commandInterceptor.GetActiveCommandCategory();
+                bool targetIsChinese = false;
+
+                if (activeCategory == CommandCategory.Inline)
+                {
+                    targetIsChinese = true;
+                }
+                else if (activeCategory == CommandCategory.Windowed)
+                {
+                    bool isCanvas = clsName.IndexOf("afxframeorview", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    clsName.IndexOf("acuiview", StringComparison.OrdinalIgnoreCase) >= 0;
+                    targetIsChinese = !isCanvas;
+                }
+                else
+                {
+                    bool isStrictTextBox = clsName.Equals("edit", StringComparison.OrdinalIgnoreCase) ||
+                                           clsName.IndexOf("richedit", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                           clsName.IndexOf("windowsforms10.edit", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                    if (isStrictTextBox)
+                    {
+                        int elapsedMs = unchecked(Environment.TickCount - _lastDoubleClickTick);
+
+                        if (_lastDoubleClickTick != 0 && elapsedMs > 0 && elapsedMs < 1500)
                         {
-                            ImeController.ForceChinese(currentFocus);
-                            _hasForcedChineseForThisEditor = true;
+                            targetIsChinese = true;
+                            _lastDoubleClickTick = 0;
+                        }
+                        else
+                        {
+                            targetIsChinese = false;
                         }
                     }
                     else
                     {
-                        if (_isCurrentlyInEditor)
-                        {
-                            if (!_hasForcedEnglishForThisCanvas)
-                            {
-                                ImeController.ForceEnglish(currentFocus);
-                                _hasForcedEnglishForThisCanvas = true;
-                            }
-                            _isCurrentlyInEditor = false;
-                            _hasForcedChineseForThisEditor = false;
-                        }
-                    }
-                }
-                else if (activeCategory == CommandCategory.Inline)
-                {
-                    if (!_hasForcedChineseForThisEditor)
-                    {
-                        ImeController.ForceChinese(currentFocus);
-                        _hasForcedChineseForThisEditor = true;
+                        targetIsChinese = false;
                     }
                 }
 
-                _lastProcessedHwnd = currentFocus;
-                _lastProcessedClassName = className;
+                if (targetIsChinese)
+                {
+                    ImeController.ForceChinese(currentFocus);
+                }
+                else
+                {
+                    ImeController.ForceEnglish(currentFocus);
+                }
             }
             catch (System.Exception ex)
             {
                 Logger.Error("PluginMain", "强制输入法状态时发生异常", ex);
             }
-        }
-
-        private bool IsEditorClass(string className)
-        {
-            if (string.IsNullOrEmpty(className)) return false;
-            string clsLower = className.ToLowerInvariant();
-
-            if (clsLower.Contains("afxframeorview") || clsLower.Contains("acuiview") || clsLower.Contains("afxmdiframe"))
-                return false;
-
-            if (clsLower.Contains("accmdlineui"))
-                return false;
-
-            return true;
+            finally
+            {
+                _isEnforcingIme = false;
+            }
         }
 
         [CommandMethod("TOGGLEAUTOIME")]
@@ -357,16 +362,17 @@ namespace OpenCadIme
                 Document doc = Application.DocumentManager.MdiActiveDocument;
                 if (doc != null && doc.Editor != null)
                 {
-                    doc.Editor.WriteMessage($"\n>>> [{AppConstants.PluginShortName}] 已 {(_isPluginEnabled ? "开启" : "关闭")} <<<\n");
+                    doc.Editor.WriteMessage($"\n>>> [光雾山绘图定制] 已 {(_isPluginEnabled ? "开启" : "关闭")} <<<\n");
                 }
 
                 if (!_isPluginEnabled)
                 {
                     _focusManager?.StopListening();
-                    ImeController.ForceEnglish(GetCadMainWindowHandle());
+                    ImeController.ForceEnglish(ImeController.GetRealFocusWindow(GetCadMainWindowHandle()));
                 }
                 else
                 {
+                    _focusManager?.StartListening();
                     OnCommandStateChanged(this, EventArgs.Empty);
                 }
             }
@@ -420,7 +426,7 @@ namespace OpenCadIme
                 if (result == true)
                 {
                     _commandInterceptor?.UpdateWhitelist(OpenCadIme.Core.ConfigManager.LoadCommands());
-                    doc?.Editor?.WriteMessage($"\n>>> [{AppConstants.PluginShortName}] 配置已更新！ <<<\n");
+                    doc?.Editor?.WriteMessage($"\n>>> [光雾山绘图定制] 配置已更新！ <<<\n");
                 }
             }
             catch (System.Exception wpfEx)
@@ -457,7 +463,7 @@ namespace OpenCadIme
                     if (dr == System.Windows.Forms.DialogResult.OK)
                     {
                         _commandInterceptor?.UpdateWhitelist(OpenCadIme.Core.ConfigManager.LoadCommands());
-                        doc?.Editor?.WriteMessage($"\n>>> [{AppConstants.PluginShortName}] 配置已更新！ <<<\n");
+                        doc?.Editor?.WriteMessage($"\n>>> [光雾山绘图定制] 配置已更新！ <<<\n");
                     }
                 }
             }
@@ -491,7 +497,7 @@ namespace OpenCadIme
 
         public void Terminate()
         {
-            _isTerminating = true; 
+            _isTerminating = true;
             Dispose();
         }
 
@@ -529,6 +535,8 @@ namespace OpenCadIme
                     _focusManager.FocusChanged -= OnFocusChanged;
                     _focusManager.Dispose();
                 }
+
+                try { System.Windows.Forms.Application.RemoveMessageFilter(this); } catch { }
 
                 _commandInterceptor?.Dispose();
                 _hudManager?.Dispose();

@@ -35,6 +35,10 @@ namespace OpenCadIme.Interop
 
         #region 2. USER32.dll & KERNEL32 (焦点、穿透与系统级事件钩子 API)
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool IsWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern IntPtr GetFocus();
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
@@ -116,6 +120,11 @@ namespace OpenCadIme.Interop
         public const int GWL_EXSTYLE = -20;
         public const int WS_EX_TRANSPARENT = 0x20;
         public const int WS_EX_LAYERED = 0x80000;
+
+        public const int WM_KEYDOWN = 0x0100;
+        public const int WM_IME_SETCONTEXT = 0x0281;
+        public const int WM_IME_STARTCOMPOSITION = 0x010D;
+        public const uint ISC_SHOWUICOMPOSITIONWINDOW = 0x80000000;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT

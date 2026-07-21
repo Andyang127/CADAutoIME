@@ -30,6 +30,7 @@ namespace OpenCadIme.UI
         private Font _fontCountdown;
 
         private IntPtr _cachedCadHandle = IntPtr.Zero;
+        private float _cachedDpiScale = -1f;
 
         private class HudForm : Form
         {
@@ -291,17 +292,20 @@ namespace OpenCadIme.UI
             int cadWidth = cadRect.Right - cadRect.Left;
             int cadHeight = cadRect.Bottom - cadRect.Top;
             if (cadWidth <= 0 || cadHeight <= 0) return new Point(fallbackX, fallbackY);
-            float dpiScale = 1.0f;
-            try
+            if (_cachedDpiScale < 0)
             {
-                using (Graphics g = Graphics.FromHwnd(IntPtr.Zero))
+                try
                 {
-                    dpiScale = g.DpiX / 96.0f;
+                    using (Graphics g = Graphics.FromHwnd(IntPtr.Zero))
+                    {
+                        _cachedDpiScale = g.DpiX / 96.0f;
+                    }
                 }
+                catch { _cachedDpiScale = 1.0f; }
             }
-            catch { }
-            int scaledWidth = (int)(realWidth * dpiScale);
-            int scaledHeight = (int)(realHeight * dpiScale);
+
+            int scaledWidth = (int)(realWidth * _cachedDpiScale);
+            int scaledHeight = (int)(realHeight * _cachedDpiScale);
 
             int targetX = cadRect.Left + (int)(cadWidth * 2.0 / 3.0);
             int targetY = cadRect.Top + (int)(cadHeight * 2.0 / 3.0);

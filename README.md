@@ -8,23 +8,23 @@
 
 根据命令类型自动切换中英文输入法状态，彻底消除手动切换的操作中断。
 
-- **版本**: v0.4.1
+- **版本**: v0.4.2
 - **命名空间**: `OpenCadIme`
-- **核心能力**: 智能切换 | 双引擎判定 | 跨代兼容 | 多文档隔离
+- **核心能力**: 智能切换 | 三引擎判定 | 跨代兼容 | 多文档隔离
 
 ---
 
 ## ✨ 功能特性
 
 - **智能自动切换**：执行文字类命令时自动切中文，执行绘图类命令时自动切英文。
-- **双引擎判定**：结合「命令事件监听」与「窗口焦点监测」，降低误切率。
+- **三引擎防误判**：结合「命令事件监听」、「窗口焦点监测」与最新的「行为时序雷达」，彻底根绝高版本动态输入框的重叠误切。
 - **多重保险懒加载**：多重加载策略，提升老版本 CAD 及高版本 CAD 启动时的稳定性。
 - **跨代 UI 引擎**：自动适配 WinForms 与 WPF 界面，利用资源 `AssemblyResolve` 导航技术，保障 2007~2027 全系 CAD 配置面板的正常调用。
 - **多文档状态隔离**：每张图纸维护独立的输入法状态，多开窗口作业互不干扰。
 - **可视化白名单配置**：支持自定义添加命令的图形化管理界面，支持撤销/重做。
 - **隐式命令兼容**：支持双击编辑文字（`_TEXTEDIT` 等隐式命令）自动切换。
 - **防打扰机制**：区分系统后台唤醒与用户手动敲击命令，手工操作面板时不弹欢迎窗。
-- **开箱即用**：内置 98 个常用命令（47 个原生 + 51 个第三方），覆盖主流使用场景。
+- **开箱即用**：内置 99 个常用命令（47 个原生 + 52 个第三方），覆盖主流使用场景。
 - **轻量运行**：采用内存复用与 IO 防抖优化，降低对宿主性能的影响。
 
 ---
@@ -117,7 +117,7 @@ C:\Users\用户名\AppData\Roaming\OpenCadIme\AutoImeCommands.txt
 
 ### CAD 原生系统命令（47 个）
 
-- **文字编辑**: `TEXT`, `DTEXT`, `MTEXT`, `-MTEXT`, `MTEDIT`, `DDEDIT`, `FIND`, `_TEXTEDIT`, `BEDIT`
+- **文字编辑**: `TEXT`, `DTEXT`, `MTEXT`, `-MTEXT`, `MTEDIT`, `DDEDIT`, `FIND`, `_TEXTEDIT`, `BEDIT`，
 - **属性定义**: `ATTDEF`, `-ATTDEF`, `ATTEDIT`, `-ATTEDIT`, `EATTEDIT`, `BATTMAN`, `ATTREDEF`
 - **引线标注**: `QLEADER`, `LEADER`, `MLEADER`, `MLEADERCONTENTEDIT`
 - **表格操作**: `TABLE`, `TABLEDIT`, `TOBJEDIT`
@@ -127,7 +127,7 @@ C:\Users\用户名\AppData\Roaming\OpenCadIme\AutoImeCommands.txt
 
 ### 第三方插件命令（51 个）
 
-- **天正建筑/结构/机电**: `DHWZ`, `TMBZ`, `ZFBZ`, `YCBZ`, `SYTM`, `FJMC`, `WDNAM`, `GJMC`, `JSBZ`, `ZWBZ`, `SMBZ`, `TBLKNAME`, `TKGM`, `GGWZ`, `WZYS`, `QXWZ`
+- **天正建筑/结构/机电**: `DHWZ`, `TMBZ`, `ZFBZ`, `YCBZ`, `SYTM`, `FJMC`, `WDNAM`, `GJMC`, `JSBZ`, `ZWBZ`, `SMBZ`, `TBLKNAME`, `TTEXT`,`TKGM`, `GGWZ`, `WZYS`, `QXWZ`
 - **探索者 TSSD（结构）**: `TS_SMZ`, `TS_GJMC`, `TS_JJS`, `TS_HFBZ`
 - **源泉设计 YQArch**: `YQ_WZPL`, `YQ_BZBJ`, `YQ_BZPL`, `YQ_YPZ`, `YQ_MCBZ`, `YQ_GJMC`
 - **海龙工具箱（室内）**: `DD`, `AF`, `AT`, `AB`, `ABB`
@@ -139,26 +139,18 @@ C:\Users\用户名\AppData\Roaming\OpenCadIme\AutoImeCommands.txt
 
 ## 🧩 工作原理
 
-### 双引擎判定机制
+### 三引擎判定机制
 
 插件采用两种机制结合的方式，精准判断当前是否需要切换为中文：
 
-1. **命令事件引擎**：监听 `CommandWillStart` 和 `CommandEnded` 事件，当执行白名单内的文字命令时，标记“文本命令激活”状态。
-2. **焦点雷达引擎**：通过 `SetWinEventHook` 监听 `EVENT_OBJECT_FOCUS` 事件，实时捕获当前焦点窗口的类名。  
-  **互补逻辑：**
+1. **命令事件引擎**：监听 CommandWillStart 和 CommandEnded 事件，当执行白名单内的文字命令时，标记“文本命令激活”状态。
+2. **焦点雷达引擎**：通过 SetWinEventHook 监听 EVENT_OBJECT_FOCUS 事件，实时捕获当前焦点窗口的类名。
+3. **行为时序引擎 (v0.4.2 新增)**：深入 Windows 消息流拦截 WM_LBUTTONDBLCLK (双击)，通过精确到毫秒的 1.5 秒时序容差，从行为学上完美区分敲击键盘召唤的“动态输入框”与双击唤出的“Windows UI输入框”。
 
-
-- **命令事件引擎**负责决定“什么时候该切中文”。
-- **焦点雷达引擎**负责决定“什么时候该切回英文”（例如右键菜单、智能提示弹窗抢夺焦点时强保英文状态）。
 
 ### 多重保险懒加载机制
 
-引入懒加载策略：调整 IExtensionApplication.Initialize 中的初始化时机。  
-监听 DocumentCreated / DocumentActivated 事件，待图纸就绪后再进行加载。  
-完善超时保护机制，减少导致 CAD 启动卡死的可能。  
-优化资源调用与挂载：订阅 AppDomain.AssemblyResolve 事件，保障高版本 CAD 中 WPF 资源的正常寻路。  
-智能适配 MFC 消息循环（老版本）与 WPF/XAML 架构（新版本）。  
-提供 2007~2027 各个 CAD 版本的差异化调用入口。
+引入懒加载策略：调整 IExtensionApplication.Initialize 中的初始化时机。监听 DocumentCreated / DocumentActivated 事件，待图纸就绪后再进行加载。完善超时保护机制，减少导致 CAD 启动卡死的可能。优化资源调用与挂载：订阅 AppDomain.AssemblyResolve 事件，保障高版本 CAD 中 WPF 资源的正常寻路。智能适配 MFC 消息循环（老版本）与 WPF/XAML 架构（新版本）。提供 2007~2027 各个 CAD 版本的差异化调用入口。
 
 ---
 
@@ -234,28 +226,28 @@ Visual Studio 2022+
 
 ```
 
-CAD Auto IME/          
-├── build/                # 编译输出目录          
-├── installer/            # 安装包项目 (Inno Setup)          
-├── lib/                  # AutoCAD SDK 依赖 (CAD DLLs)          
-│   ├── R17.0-R17.2_CAD_2007-2009/          
-│   ├── R18.0_R18.2_CAD_2010-2012/          
-│   ... (其他版本)          
-│   └── R26.0_CAD_2027/          
-├── OpenCadIme.Core/      # 核心逻辑共享项目 (Shared Project)          
-│   ├── Core/             # 核心逻辑 (CommandInterceptor, ConfigManager 等)          
-│   ├── Interop/          # Win32 API 调用          
-│   ├── UI/               # UI 逻辑 (HudManager, LegacyForm, ModernWpf)          
-│   ├── AppConstants.cs   # 常量定义          
-│   ├── PluginMain.cs     # 插件入口          
-│   └── UpdateManager.cs  # 更新检查          
-├── src/                  # 各版本适配层 (版本差异化包装)          
-│   ├── OpenCadIme_Sys17/          
-│   ├── OpenCadIme_Sys18/          
-│   ... (其他 SysXX 项目)          
-│   └── OpenCadIme_Sys27/          
-├── CAD Auto IME.sln      # Visual Studio 解决方案文件          
-├── LICENSE.txt           # 开源协议          
+CAD Auto IME/                
+├── build/                # 编译输出目录                
+├── installer/            # 安装包项目 (Inno Setup)                
+├── lib/                  # AutoCAD SDK 依赖 (CAD DLLs)                
+│   ├── R17.0-R17.2_CAD_2007-2009/                
+│   ├── R18.0_R18.2_CAD_2010-2012/                
+│   ... (其他版本)                
+│   └── R26.0_CAD_2027/                
+├── OpenCadIme.Core/      # 核心逻辑共享项目 (Shared Project)                
+│   ├── Core/             # 核心逻辑 (CommandInterceptor, ConfigManager 等)                
+│   ├── Interop/          # Win32 API 调用                
+│   ├── UI/               # UI 逻辑 (HudManager, LegacyForm, ModernWpf)                
+│   ├── AppConstants.cs   # 常量定义                
+│   ├── PluginMain.cs     # 插件入口                
+│   └── UpdateManager.cs  # 更新检查                
+├── src/                  # 各版本适配层 (版本差异化包装)                
+│   ├── OpenCadIme_Sys17/                
+│   ├── OpenCadIme_Sys18/                
+│   ... (其他 SysXX 项目)                
+│   └── OpenCadIme_Sys27/                
+├── CAD Auto IME.sln      # Visual Studio 解决方案文件                
+├── LICENSE.txt           # 开源协议                
 └── README.md             # 项目说明文档  
 ```
 
@@ -272,6 +264,12 @@ CAD Auto IME/
 ---
 
 ## 📜 版本历史
+
+### v0.4.2 (2026-07-21) - 核心维稳与细节修复
+
+- 🛡️时序判定引擎：完全舍弃脆弱的 DOM 树类名猜测机制。基于底层 IMessageFilter 拦截 WM_LBUTTONDBLCLK，以 1.5 秒的操作时序容差，完美从行为学上区分“手工敲击的命令框”与“双击唤出的天正编辑框”。
+- 🤖TSF 底层穿透：破除对过时 IMM32 状态 IsAlreadyInState 的过度依赖，消除系统底层状态脱节导致的漏切现象，指令执行更加坚决。
+- 🪟架构极致精简：大幅清理臃肿的父窗体溯源逻辑代码，减轻钩子负担，进一步压榨后台执行性能，做到绝对“不打地鼠”的向下兼容架构。
 
 ### v0.4.1 (2026-07-08) - 核心维稳与细节修复
 
@@ -333,12 +331,9 @@ CAD Auto IME/
 | 项目           | 说明                                                                   |
 |:-----------------|:-------------------------------------------------------------------------|
 | **作者**       | （浅醉·墨语）_Andy127                                             |
-| **性质**       | 个人项目，纯粹的兴趣爱好开源分享                                     |
+| **性质**       | 个人项目，纯粹的兴趣爱好开源分享                         |
 | **开发理念** | 极致打磨，服务每一位绘图者，解决最痛点的实际问题 |
 | **反馈渠道** | @[浅醉·墨语](https://v.douyin.com/lGMz8-jzo5U/)                     |
 
-
-
-*文档版本: v0.4.1 | 更新时间: 2026-07-08*
 
  

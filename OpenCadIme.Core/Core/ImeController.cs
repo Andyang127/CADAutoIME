@@ -21,17 +21,28 @@ namespace OpenCadIme
                     return;
                 }
 
-                Type threadMgrType = Type.GetTypeFromCLSID(Win32API.CLSID_TF_ThreadMgr);
-                if (threadMgrType != null)
+                IntPtr pTim = IntPtr.Zero;
+                int hResult = Win32API.TF_CreateThreadMgr(out pTim);
+
+                if (hResult == 0 && pTim != IntPtr.Zero)
                 {
-                    _tsfThreadMgrObj = Activator.CreateInstance(threadMgrType);
-                    Logger.Info("ImeController", "TSF 现代双轨引擎初始化成功。");
+                    _tsfThreadMgrObj = System.Runtime.InteropServices.Marshal.GetObjectForIUnknown(pTim);
+                    System.Runtime.InteropServices.Marshal.Release(pTim);
+
+                    Logger.Info("ImeController", "TSF 现代双轨引擎初始化成功 (通过原生 API 直连)。");
+                }
+                else
+                {
+                    Logger.Error("ImeController", $"TSF 引擎原生初始化失败，HRESULT 错误码: {hResult}");
                 }
             }
-            catch (Exception ex) { Logger.Error("ImeController", "TSF 引擎初始化失败", ex); }
+            catch (Exception ex)
+            {
+                Logger.Error("ImeController", "TSF 引擎初始化发生严重崩溃", ex);
+            }
         }
 
-        private static bool IsAlreadyInState(IntPtr hwnd, bool targetIsChinese)
+        public static bool IsAlreadyInState(IntPtr hwnd, bool targetIsChinese)
         {
             try
             {
@@ -57,16 +68,13 @@ namespace OpenCadIme
             return false;
         }
 
-        public static void ForceEnglish(IntPtr cadMainWindowHwnd)
+        public static void ForceEnglish(IntPtr targetHwnd)
         {
-            IntPtr targetHwnd = IntPtr.Zero;
+            if (targetHwnd == IntPtr.Zero || !Win32API.IsWindow(targetHwnd)) return;
+
             IntPtr activeHimc = IntPtr.Zero;
             try
             {
-                targetHwnd = GetRealFocusWindow(cadMainWindowHwnd);
-                if (targetHwnd == IntPtr.Zero) targetHwnd = cadMainWindowHwnd;
-
-                if (IsAlreadyInState(targetHwnd, false)) return;
 
                 activeHimc = Win32API.ImmGetContext(targetHwnd);
                 if (activeHimc != IntPtr.Zero)
@@ -78,8 +86,7 @@ namespace OpenCadIme
                     if (Win32API.ImmGetConversionStatus(activeHimc, out conversion, out sentence))
                     {
                         uint newConversion = Win32API.IME_CMODE_ALPHANUMERIC;
-                        if (conversion != newConversion)
-                            Win32API.ImmSetConversionStatus(activeHimc, newConversion, sentence);
+                        Win32API.ImmSetConversionStatus(activeHimc, newConversion, sentence);
                     }
                 }
 
@@ -88,23 +95,20 @@ namespace OpenCadIme
             catch (Exception ex) { Logger.Error("ImeController", "ForceEnglish 执行异常", ex); }
             finally
             {
-                if (activeHimc != IntPtr.Zero && targetHwnd != IntPtr.Zero)
+                if (activeHimc != IntPtr.Zero)
                 {
                     try { Win32API.ImmReleaseContext(targetHwnd, activeHimc); } catch { }
                 }
             }
         }
 
-        public static void ForceChinese(IntPtr cadMainWindowHwnd)
+        public static void ForceChinese(IntPtr targetHwnd)
         {
-            IntPtr targetHwnd = IntPtr.Zero;
+            if (targetHwnd == IntPtr.Zero || !Win32API.IsWindow(targetHwnd)) return;
+
             IntPtr activeHimc = IntPtr.Zero;
             try
             {
-                targetHwnd = GetRealFocusWindow(cadMainWindowHwnd);
-                if (targetHwnd == IntPtr.Zero) targetHwnd = cadMainWindowHwnd;
-
-                if (IsAlreadyInState(targetHwnd, true)) return;
 
                 activeHimc = Win32API.ImmGetContext(targetHwnd);
                 if (activeHimc != IntPtr.Zero)
@@ -116,8 +120,7 @@ namespace OpenCadIme
                     if (Win32API.ImmGetConversionStatus(activeHimc, out conversion, out sentence))
                     {
                         uint targetMode = Win32API.IME_CMODE_NATIVE | Win32API.IME_CMODE_SYMBOL;
-                        if (conversion != targetMode)
-                            Win32API.ImmSetConversionStatus(activeHimc, targetMode, sentence);
+                        Win32API.ImmSetConversionStatus(activeHimc, targetMode, sentence);
                     }
                 }
 
@@ -126,7 +129,7 @@ namespace OpenCadIme
             catch (Exception ex) { Logger.Error("ImeController", "ForceChinese 执行异常", ex); }
             finally
             {
-                if (activeHimc != IntPtr.Zero && targetHwnd != IntPtr.Zero)
+                if (activeHimc != IntPtr.Zero)
                 {
                     try { Win32API.ImmReleaseContext(targetHwnd, activeHimc); } catch { }
                 }
@@ -181,7 +184,7 @@ namespace OpenCadIme
             }
         }
 
-        private static IntPtr GetRealFocusWindow(IntPtr fallbackHwnd)
+        public static IntPtr GetRealFocusWindow(IntPtr fallbackHwnd)
         {
             try
             {

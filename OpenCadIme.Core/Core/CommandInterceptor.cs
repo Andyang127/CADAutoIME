@@ -142,6 +142,8 @@ namespace OpenCadIme.Core
                 try
                 {
                     cmdName = e.GlobalCommandName;
+
+                    Logger.Info("CommandInterceptor", $"抓取到底层静默命令触发: {cmdName}");
                 }
                 catch
                 {
@@ -192,12 +194,13 @@ namespace OpenCadIme.Core
                 string cmdName = e.FirstLine;
                 if (string.IsNullOrEmpty(cmdName)) return;
 
-                Document doc = sender as Document;
-                if (doc != null)
+                if (cmdName.StartsWith("(C:", StringComparison.OrdinalIgnoreCase))
                 {
-                    cmdName = cmdName.Replace("(C:", "").Replace("(c:", "").Replace(")", "").Trim();
+                    cmdName = cmdName.Substring(3).TrimEnd(')').Trim();
                     CommandCategory cat = GetCommandCategoryFast(cmdName);
-                    SetTextCommandActive(doc, cat);
+
+                    Document doc = sender as Document;
+                    if (doc != null) SetTextCommandActive(doc, cat);
                 }
             }
             catch { }
@@ -225,12 +228,14 @@ namespace OpenCadIme.Core
 
         private static string NormalizeCommand(string input)
         {
-            string cmd = input.Trim().Trim('\uFEFF', '\u200B').ToUpperInvariant();
-            while (cmd.Length > 0 && (cmd[0] == '_' || cmd[0] == '-' || cmd[0] == '\'' || cmd[0] == '.'))
+            if (string.IsNullOrEmpty(input) || input.Trim().Length == 0) return string.Empty;
+            string cmd = input.Trim('\uFEFF', '\u200B', ' ', '\t').ToUpperInvariant();
+            int startIndex = 0;
+            while (startIndex < cmd.Length && (cmd[startIndex] == '_' || cmd[startIndex] == '-' || cmd[startIndex] == '\'' || cmd[startIndex] == '.'))
             {
-                cmd = cmd.Substring(1);
+                startIndex++;
             }
-            return cmd;
+            return startIndex > 0 ? cmd.Substring(startIndex) : cmd;
         }
 
         private void SetTextCommandActive(Document doc, CommandCategory category)

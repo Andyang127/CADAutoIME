@@ -70,9 +70,10 @@ namespace OpenCadIme.Core
                             if (tLine.Equals("[Mode:Process]", StringComparison.OrdinalIgnoreCase)) { UiConfigManager.IsGlobalMode = false; continue; }
 
                             string cmd = NormalizeCommand(tLine);
+                            // 修复：剔除了多余的重复判断逻辑
                             if (!string.IsNullOrEmpty(cmd) && !whitelist.ContainsKey(cmd))
                             {
-                                whitelist[cmd] = DefaultCommandsMap.ContainsKey(cmd) ? DefaultCommandsMap[cmd] : CommandCategory.Windowed;
+                                whitelist[cmd] = DefaultCommandsMap.ContainsKey(cmd) ? DefaultCommandsMap[cmd] : CommandCategory.Inline;
                                 LoadedCustomCount++;
                             }
                         }
@@ -95,14 +96,13 @@ namespace OpenCadIme.Core
         private static string NormalizeCommand(string input)
         {
             if (string.IsNullOrEmpty(input) || input.Trim().Length == 0) return string.Empty;
-
-            string cmd = input.Trim().Trim('\uFEFF', '\u200B').ToUpperInvariant();
-            while (cmd.Length > 0 && (cmd[0] == '_' || cmd[0] == '-' || cmd[0] == '\'' || cmd[0] == '.'))
+            string cmd = input.Trim('\uFEFF', '\u200B', ' ', '\t').ToUpperInvariant();
+            int startIndex = 0;
+            while (startIndex < cmd.Length && (cmd[startIndex] == '_' || cmd[startIndex] == '-' || cmd[startIndex] == '\'' || cmd[startIndex] == '.'))
             {
-                cmd = cmd.Substring(1);
+                startIndex++;
             }
-
-            return cmd;
+            return startIndex > 0 ? cmd.Substring(startIndex) : cmd;
         }
     }
 }

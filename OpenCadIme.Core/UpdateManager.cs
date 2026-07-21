@@ -14,11 +14,11 @@ namespace OpenCadIme.Core
 
         public static void CheckForUpdates(Action<string, bool> onUpdateAvailable, string skippedPrereleaseVersion)
         {
-            Thread updateThread = new Thread(new ThreadStart(delegate
+            ThreadPool.QueueUserWorkItem(state =>
             {
                 try
                 {
-                    ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
+                    ServicePointManager.SecurityProtocol |= (SecurityProtocolType)3072;
 
                     HttpWebRequest request = (HttpWebRequest)WebRequest.Create(AppConstants.GitHubApiLatest);
                     request.Method = "GET";
@@ -65,11 +65,7 @@ namespace OpenCadIme.Core
                 {
                     Logger.Error("UpdateManager", "后台检查更新失败", ex);
                 }
-            }));
-
-            updateThread.IsBackground = true;
-            updateThread.Priority = ThreadPriority.Lowest; 
-            updateThread.Start();
+            });
         }
 
         #region 版本号解析工具方法

@@ -70,6 +70,12 @@ namespace OpenCadIme.UI.LegacyForm
 
         public ConfigForm()
         {
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer |
+                          ControlStyles.ResizeRedraw |
+                          ControlStyles.AllPaintingInWmPaint |
+                          ControlStyles.UserPaint, true);
+            this.UpdateStyles();
+
             FontTitle = CreateSafeFont("微软雅黑", 15F, FontStyle.Bold);
             FontSubtitle = CreateSafeFont("Consolas", 10F, FontStyle.Italic);
             FontInput = CreateSafeFont("Consolas", 11F, FontStyle.Regular);
@@ -90,10 +96,12 @@ namespace OpenCadIme.UI.LegacyForm
             this.KeyDown += Form_KeyDown;
         }
 
+        private Size _lastRegionSize = Size.Empty;
         private void SetRoundRegion()
         {
             try
             {
+                if (this.Size == _lastRegionSize) return;
                 using (GraphicsPath path = new GraphicsPath())
                 {
                     int r = 16;
@@ -105,6 +113,7 @@ namespace OpenCadIme.UI.LegacyForm
                     Region old = this.Region;
                     this.Region = new Region(path);
                     if (old != null) old.Dispose();
+                    _lastRegionSize = this.Size;
                 }
             }
             catch { }
@@ -318,17 +327,33 @@ namespace OpenCadIme.UI.LegacyForm
 
         private void RebuildTags(FlowLayoutPanel flp, List<string> cmds, bool isCore)
         {
-            flp.SuspendLayout(); flp.Controls.Clear();
+            flp.SuspendLayout();
+
+            while (flp.Controls.Count > 0)
+            {
+                Control ctrl = flp.Controls[0];
+                flp.Controls.RemoveAt(0);
+                ctrl.Click -= Chip_Click;
+                ctrl.DoubleClick -= Chip_DoubleClick;
+                ctrl.Dispose();
+            }
+
             if (isCore) selectedCoreTag = null; else selectedCustomTag = null;
+
             foreach (string cmd in cmds)
             {
                 Label chip = new Label { Text = cmd, AutoSize = true, Font = Chip, BackColor = ThemeBgInput, ForeColor = isCore ? ThemeTextMuted : Color.White, Padding = new Padding(12, 6, 12, 6), Margin = new Padding(4), Cursor = Cursors.Hand, Tag = cmd };
+
                 chip.MouseEnter += delegate { if (chip != selectedCustomTag && chip != selectedCoreTag) chip.BackColor = Color.FromArgb(70, 70, 75); };
                 chip.MouseLeave += delegate { StyleChip(chip, chip == selectedCustomTag || chip == selectedCoreTag, isCore); };
-                chip.Click += Chip_Click; chip.DoubleClick += Chip_DoubleClick;
+                chip.Click += Chip_Click;
+                chip.DoubleClick += Chip_DoubleClick;
+
                 flp.Controls.Add(chip);
             }
-            flp.ResumeLayout(); FilterTagsVisibility();
+
+            flp.ResumeLayout(true);
+            FilterTagsVisibility();
         }
 
         private void FilterTagsVisibility()

@@ -17,7 +17,7 @@
 		<BaseOutputPath>..\..\build\Sys27</BaseOutputPath>
 		<NoWarn>$(NoWarn);MSB3277</NoWarn>
 		<Platforms>AnyCPU;x86</Platforms>
-		<AssemblyName>OpenCadIme_R25.1_CAD_2027</AssemblyName>
+		<AssemblyName>OpenCadIme_R26.0_CAD_2027</AssemblyName>
 		<RootNamespace/>
 	</PropertyGroup>
 

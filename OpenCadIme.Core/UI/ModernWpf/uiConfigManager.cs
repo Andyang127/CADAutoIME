@@ -33,7 +33,7 @@ namespace OpenCadIme.UI
             "DD", "AF", "AT", "AB", "ABB", "IVT_TextEdit", "IVT_TextSerial",
             "IVT_AttEdit", "IVT_BlockRename", "YX_CK", "YX_MJ", "YX_WT",
             "DHSHR", "DHBJ", "WZSHR", "TYBJ", "WZPL", "BZPL",
-            "YPZ", "XXBZH", "PMZ", "LMBZ", "PMMZ", "SBMC", "SMWZ"
+            "YPZ", "XXBZH", "PMZ", "LMBZ", "PMMZ", "SBMC","TTEXT", "SMWZ"
         };
 
         public static List<string> ReadAllCommandsFromDisk()
@@ -64,12 +64,13 @@ namespace OpenCadIme.UI
         private static string NormalizeCommand(string input)
         {
             if (string.IsNullOrEmpty(input) || input.Trim().Length == 0) return string.Empty;
-            string cmd = input.Trim().Trim('\uFEFF', '\u200B').ToUpperInvariant();
-            while (cmd.Length > 0 && (cmd[0] == '_' || cmd[0] == '-' || cmd[0] == '\'' || cmd[0] == '.'))
+            string cmd = input.Trim('\uFEFF', '\u200B', ' ', '\t').ToUpperInvariant();
+            int startIndex = 0;
+            while (startIndex < cmd.Length && (cmd[startIndex] == '_' || cmd[startIndex] == '-' || cmd[startIndex] == '\'' || cmd[startIndex] == '.'))
             {
-                cmd = cmd.Substring(1);
+                startIndex++;
             }
-            return cmd;
+            return startIndex > 0 ? cmd.Substring(startIndex) : cmd;
         }
 
         public static void SaveAllCommands(List<string> commands, bool isGlobal)
@@ -120,7 +121,7 @@ namespace OpenCadIme.UI
                 }
                 catch
                 {
-                    break; 
+                    break;
                 }
             }
         }

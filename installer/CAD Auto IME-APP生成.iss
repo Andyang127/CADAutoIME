@@ -1,10 +1,10 @@
 #define MyAppFullName "[浅醉·墨语] CAD Auto IME"
 #define MyAppName "CAD Auto IME"
-#define MyAppVersion "0.4.1"
+#define MyAppVersion "0.4.2"
 #define MyPublisher "Andy_127"
 
 [Setup]
-VersionInfoVersion=0.4.1.0
+VersionInfoVersion=0.4.2.0
 AppId={{9F8E2A1B-4C5D-6E7F-8A9B-0C1D2E3F4A5B}
 PrivilegesRequired=lowest
 AppName={#MyAppFullName}
@@ -34,7 +34,7 @@ Source: "..\build\Sys23\OpenCadIme_Sys23.dll"; DestDir: "{app}\Sys23"; Flags: ig
 Source: "..\build\Sys24\OpenCadIme_Sys24.dll"; DestDir: "{app}\Sys24"; Flags: ignoreversion
 Source: "..\build\Sys25\OpenCadIme_R25.0_CAD_2025.dll"; DestDir: "{app}\Sys25"; Flags: ignoreversion
 Source: "..\build\Sys26\OpenCadIme_R25.1_CAD_2026.dll"; DestDir: "{app}\Sys26"; Flags: ignoreversion
-Source: "..\build\Sys27\OpenCadIme_R25.1_CAD_2027.dll"; DestDir: "{app}\Sys27"; Flags: ignoreversion
+Source: "..\build\Sys27\OpenCadIme_R26.0_CAD_2027.dll"; DestDir: "{app}\Sys27"; Flags: ignoreversion
 
 ; 说明文档和图标
 Source: "Readme.html"; DestDir: "{app}"; Flags: ignoreversion

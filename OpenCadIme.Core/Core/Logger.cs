@@ -16,6 +16,7 @@ namespace OpenCadIme.Core
         private static readonly Queue<string> _logQueue = new Queue<string>();
         private static readonly object _queueLock = new object();
         private static bool _isFlushing = false;
+        private const int MaxQueueSize = 1000;
 
         public static void Error(string module, string message, Exception ex = null)
         {
@@ -34,15 +35,18 @@ namespace OpenCadIme.Core
 
                 lock (_queueLock)
                 {
-                    _logQueue.Enqueue(logEntry);
-                    if (!_isFlushing)
+                    if (_logQueue.Count < MaxQueueSize)
                     {
-                        _isFlushing = true;
-                        ThreadPool.QueueUserWorkItem(FlushLogQueue);
+                        _logQueue.Enqueue(logEntry);
+                        if (!_isFlushing)
+                        {
+                            _isFlushing = true;
+                            ThreadPool.QueueUserWorkItem(FlushLogQueue);
+                        }
                     }
                 }
             }
-            catch { /* 终极防线静默 */ }
+            catch { /* 防线静默 */ }
         }
 
         public static void Info(string module, string message)
@@ -64,15 +68,14 @@ namespace OpenCadIme.Core
 
                 while (true)
                 {
-                    List<string> batchToLog = new List<string>();
+                    Queue<string> queueToProcess = null;
+
                     lock (_queueLock)
                     {
                         if (_logQueue.Count > 0)
                         {
-                            while (_logQueue.Count > 0)
-                            {
-                                batchToLog.Add(_logQueue.Dequeue());
-                            }
+                            queueToProcess = new Queue<string>(_logQueue);
+                            _logQueue.Clear();
                         }
                         else
                         {
@@ -81,13 +84,13 @@ namespace OpenCadIme.Core
                         }
                     }
 
-                    if (batchToLog.Count > 0)
+                    if (queueToProcess != null && queueToProcess.Count > 0)
                     {
                         using (StreamWriter sw = new StreamWriter(LogFilePath, true, System.Text.Encoding.UTF8))
                         {
-                            foreach (string entry in batchToLog)
+                            while (queueToProcess.Count > 0)
                             {
-                                sw.Write(entry); 
+                                sw.Write(queueToProcess.Dequeue());
                             }
                         }
                     }

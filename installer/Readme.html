@@ -593,7 +593,7 @@
         <header>
             <span class="brand-badge"><i class="fa-solid fa-shield-halved"></i>【 浅醉 · 墨语】出品</span>
             <h1>CAD输入法自动切换助手</h1>
-            <p><i class="fa-solid fa-file-code"></i> CAD Auto IME | 技术文档 (v0.4.1 版)</p>
+            <p><i class="fa-solid fa-file-code"></i> CAD Auto IME | 技术文档 (v0.4.2 版)</p>
         </header>
 
         <!-- 部署通知区块 -->
@@ -613,7 +613,7 @@
         <section id="overview">
             <h2><i class="fa-solid fa-bullseye"></i> 产品概述</h2>
             <h3>🔹 产品定位</h3>
-            <p><strong>CAD Auto IME</strong> 是一款专为工程设计领域打造的<strong>底层系统级效率增强组件</strong>。v0.4.1 版，在跨越技术鸿沟的基础上，深度修复了底层状态与高分屏渲染，为全系 AutoCAD 提供极致稳定、0 崩溃的体验。</p>
+            <p><strong>CAD Auto IME</strong> 是一款专为工程设计领域打造的<strong>底层系统级效率增强组件</strong>。v0.4.2 版，在跨越技术鸿沟的基础上，深度修复了底层状态与高分屏渲染，为全系 AutoCAD 提供极致稳定、0 崩溃的体验。</p>
 
             <h3>🔹 解决的核心问题</h3>
             <div class="table-container">
@@ -622,7 +622,7 @@
                         <tr>
                             <th style="width: 25%">使用场景</th>
                             <th style="width: 35%">传统操作方式 (含旧版插件)</th>
-                            <th style="width: 40%">本工具解决方案 (v0.4.1 版)</th>
+                            <th style="width: 40%">本工具解决方案 (v0.4.2 版)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -653,8 +653,8 @@
 
         <!-- 核心特性 -->
         <section id="features">
-            <h2><i class="fa-solid fa-bolt"></i> v0.4.1 版核心特性</h2>
-            <p>本次版本全面攻克了长期困扰业界插件的“跨版本 API 分裂”与“启动卡死”难题：</p>
+            <h2><i class="fa-solid fa-bolt"></i> v0.4.2 版核心特性</h2>
+            <p>本次版本全面攻克了困扰业界已久的“类名特征混淆”与“双框重叠”难题：</p>
 
             <h3><i class="fa-solid fa-shield-heart"></i> 1. 跨世代极客加载引擎 (Anti-Freeze)</h3>
             <p>引入了“多重保险监听 + 懒加载”技术。彻底解决早期 CAD (2007) 瞬间加载报错与现代 CAD (2026) 启动画面死锁的矛盾。像猎人一样耐心，只在图纸 100% 准备就绪的瞬间安全切入系统。</p>
@@ -662,8 +662,8 @@
             <h3><i class="fa-solid fa-layer-group"></i> 2. 原生句柄智能 UI 挂载</h3>
             <p>通过底层动态反射技术，智能适配 2007 的 MFC 消息循环与 2026 的 WPF/XAML 新架构。独家研发 `AssemblyResolve` 导航探针，让极其挑剔的高版本 CAD 也能顺滑弹出极其现代的交互面板，杜绝一切静默崩溃。</p>
 
-            <h3><i class="fa-solid fa-brain"></i> 3. 双擎状态锁：0 误杀防御网</h3>
-            <p>我们将"命令状态"与"焦点弹窗"深度结合。只要你执行的不是白名单里的文字命令，底层就会挂上一把"死锁"，即使界面弹出一万个下拉菜单抢占焦点，插件也绝对不会切出中文。</p>
+            <h3><i class="fa-solid fa-brain"></i> 3. 三引擎防误判：首创行为时序雷达</h3>
+            <p>我们将“命令事件监听”、“窗口焦点监测”与全新的“行为时序识别”深度结合。抛弃死板的 DOM 树类名猜测，系统会自动记录鼠标 <code>双击 (DoubleClick)</code> 时间戳。在1.5秒时序容差内，极其精准地剥离“手工敲击的 CAD 命令框”与“鼠标双击唤出的天正编辑框”，实现物理法则级别的零误杀。</p>
 
             <h3><i class="fa-solid fa-desktop"></i> 4. 全透明双区平权 UX 与无感交互</h3>
             <p>彻底抛弃"黑盒"逻辑。现在的配置面板中，所有 AutoCAD 核心文字命令（如 TEXT, MTEXT, BLOCK, LAYER 等 28 个）与外挂命令完全透明可见。配合智能防打扰判断（只在后台加载时弹窗，手工敲命令不再遮挡视线），交互如丝般顺滑。</p>
@@ -773,6 +773,9 @@
             
             <h3>Q4：为什么安装/卸载时一直提示 CAD 在运行，点击强制关闭也没用？</h3>
             <p><strong>A</strong>：这是因为你的 AutoCAD 占用了系统管理员权限，或者残留了隐形的 <code>accoreconsole.exe</code> 进程，导致标准安装包无法强杀。<strong>v0.4.1 安装包已引入“强行突破”防死锁机制</strong>，如果你确认已经手动关闭了 CAD，只需在弹窗提示中点击“是（强行继续）”，即可无视系统权限拦截，完美完成安装与卸载。</p>
+
+            <h3>Q5：为什么以前敲击快捷键时，拼音框和 CAD 命令框会同时出现叠在一起？</h3>
+            <p><strong>A</strong>：此灾难性现象已在 <strong>v0.4.2</strong> 中彻底根除！过往版本中，高版本 AutoCAD 的 WPF 动态输入悬浮窗与天正的纯净白框在底层句柄特征上发生混淆，导致程序误判切了中文。最新版通过底层 <code>IMessageFilter</code> 引入了“行为时序识别”技术，不再受限于 UI 框架的变更，彻底解决了叠框顽疾。</p>
         </section>
 
         <!-- 卸载 -->
@@ -794,7 +797,22 @@
                 <div class="timeline-item active">
                     <div class="timeline-marker"></div>
                     <div class="timeline-title">
-                        <span>🚀 v0.4.1 版</span>
+                        <span>🚀 v0.4.2 版 </span>
+                        <span class="badge-update">最新版本</span>
+                    </div>
+                    <div class="timeline-content">
+                        <ul>
+                            <li><strong>🧠【行为时序引擎】</strong>：完全舍弃脆弱的 DOM 树类名猜谜机制。基于底层 <code>IMessageFilter</code> 拦截双击消息，以 1.5 秒的操作时序容差，从行为学上完美区分“敲击出的命令框”与“双击出的天正编辑框”。</li>
+                            <li><strong>⚡【底层穿透执行】</strong>：破除对过时 <code>IMM32</code> 状态反馈的过度依赖，消除系统底层状态脱节导致的漏切现象，指令执行更加暴力坚决。</li>
+                            <li><strong>🧹【架构极致精简】</strong>：大幅清理臃肿的父窗体溯源逻辑代码，减轻底层 WinEvent 钩子负担，进一步压榨后台执行性能，实现真正的向下兼容。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item active">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-title">
+                        <span>📦 v0.4.1 版</span>
                         <span class="badge-update">本次更新</span>
                     </div>
                     <div class="timeline-content">
@@ -911,7 +929,7 @@
             <p><strong>感谢你选择 CAD 输入法自动切换助手</strong></p>
             <p style="font-style: italic;">让每一位设计师都能专注于创作，而非繁琐的输入法切换</p>
             <p style="font-size: 11px; margin-top: 16px; color: #94a3b8;">
-                文档版本：v0.4.1 | 更新时间：2026 年 07 月 08 日 | 适配系统：Windows 7/10/11 (64 位)
+                文档版本：v0.4.2 | 更新时间：2026 年 07 月 21 日 | 适配系统：Windows 7/10/11 (64 位)
             </p>
         </footer>
     </main>
