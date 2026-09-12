@@ -34,6 +34,8 @@ namespace OpenCadIme.UI.ModernWpf
             lblTitle.Text = $"{AppConstants.PluginShortName} 白名单配置";
             lblVersion.Text = AppConstants.VersionDisplay;
 
+            LoadIconDynamically();
+
             statusTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3.5) };
             statusTimer.Tick += (s, e) => { lblStatus.Visibility = Visibility.Collapsed; statusTimer.Stop(); };
 
@@ -41,8 +43,48 @@ namespace OpenCadIme.UI.ModernWpf
             this.PreviewKeyDown += Window_PreviewKeyDown;
         }
 
+        private bool _isDarkTheme = true;
+
+        private void ApplyAutoCadSmartTheme()
+        {
+            _isDarkTheme = true;
+            try
+            {
+                if (Autodesk.AutoCAD.ApplicationServices.Application.Version.Major < 20) _isDarkTheme = false;
+                else
+                {
+                    object themeVar = Autodesk.AutoCAD.ApplicationServices.Application.GetSystemVariable("COLORTHEME");
+                    if (themeVar != null && Convert.ToInt16(themeVar) == 1) _isDarkTheme = false;
+                }
+            }
+            catch { }
+
+            if (!_isDarkTheme)
+            {
+                this.Resources["WindowBg"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F3F3F3"));
+                this.Resources["CardBg"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFFFFF"));
+                this.Resources["TitleBarBg"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E8E8E8"));
+                this.Resources["TextPrimary"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#202020"));
+                this.Resources["TextSecondary"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#606060"));
+                this.Resources["BorderLine"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D5D5D5"));
+                this.Resources["ButtonBg"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EEEEEE"));
+                this.Resources["ButtonHover"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E0E0E0"));
+                this.Resources["AccentColor"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#006CBE"));
+                this.Resources["AccentHover"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#007ACC"));
+                this.Resources["InputBg"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFFFFF"));
+                this.Resources["ThumbNormalBg"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B0B8C4"));
+                this.Resources["ThumbHoverBg"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#828F9F"));
+
+                if (txtSearchWatermark != null)
+                    txtSearchWatermark.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#8C95A0"));
+                if (lblVersion != null)
+                    lblVersion.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#006CBE"));
+            }
+        }
+
         private void ConfigWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            ApplyAutoCadSmartTheme();
             LoadAndParseData();
             RbGlobal.IsChecked = UiConfigManager.IsGlobalMode;
             RbProcess.IsChecked = !UiConfigManager.IsGlobalMode;
@@ -80,14 +122,22 @@ namespace OpenCadIme.UI.ModernWpf
             wp.Children.Clear();
             if (isCore) selectedCoreTag = null; else selectedCustomTag = null;
 
+            Color defaultBg = _isDarkTheme ? Color.FromRgb(55, 55, 58) : Color.FromRgb(240, 243, 246);
+            Color defaultBorder = _isDarkTheme ? Color.FromRgb(85, 85, 85) : Color.FromRgb(215, 220, 226);
+            Color defaultText = _isDarkTheme
+                ? (isCore ? Color.FromRgb(180, 180, 180) : Color.FromRgb(245, 245, 245))
+                : (isCore ? Color.FromRgb(100, 105, 115) : Color.FromRgb(30, 35, 45));
+
             foreach (string cmd in cmds)
             {
                 Border chip = new Border
                 {
-                    Background = new SolidColorBrush(Color.FromRgb(45, 45, 48)),
-                    CornerRadius = new CornerRadius(6),
-                    Padding = new Thickness(12, 6, 12, 6),
-                    Margin = new Thickness(4),
+                    Background = new SolidColorBrush(defaultBg),
+                    BorderBrush = new SolidColorBrush(defaultBorder),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(4),
+                    Padding = new Thickness(10, 5, 10, 5),
+                    Margin = new Thickness(3),
                     Cursor = Cursors.Hand,
                     Tag = cmd
                 };
@@ -95,13 +145,20 @@ namespace OpenCadIme.UI.ModernWpf
                 TextBlock txt = new TextBlock
                 {
                     Text = cmd,
-                    Foreground = new SolidColorBrush(isCore ? Color.FromRgb(150, 150, 150) : Colors.White),
-                    FontSize = 13,
-                    FontFamily = new FontFamily("Consolas")
+                    Foreground = new SolidColorBrush(defaultText),
+                    FontSize = 12.5,
+                    FontFamily = new FontFamily("Consolas, Segoe UI")
                 };
                 chip.Child = txt;
 
-                chip.MouseEnter += (s, ev) => { if (chip != selectedCustomTag && chip != selectedCoreTag) chip.Background = new SolidColorBrush(Color.FromRgb(70, 70, 75)); };
+                chip.MouseEnter += (s, ev) =>
+                {
+                    if (chip != selectedCustomTag && chip != selectedCoreTag)
+                    {
+                        chip.Background = new SolidColorBrush(_isDarkTheme ? Color.FromRgb(75, 75, 80) : Color.FromRgb(225, 230, 238));
+                        chip.BorderBrush = new SolidColorBrush(_isDarkTheme ? Color.FromRgb(120, 120, 120) : Color.FromRgb(0, 108, 190));
+                    }
+                };
                 chip.MouseLeave += (s, ev) => { StyleChip(chip, chip == selectedCustomTag || chip == selectedCoreTag, isCore); };
                 chip.MouseLeftButtonDown += Chip_MouseLeftButtonDown;
 
@@ -112,10 +169,23 @@ namespace OpenCadIme.UI.ModernWpf
 
         private void StyleChip(Border lbl, bool isSelected, bool isCore)
         {
-            lbl.Background = new SolidColorBrush(isSelected ? Color.FromRgb(0, 210, 211) : Color.FromRgb(45, 45, 48));
-            if (lbl.Child is TextBlock txt)
+            if (!_isDarkTheme)
             {
-                txt.Foreground = new SolidColorBrush(isSelected ? Color.FromRgb(20, 20, 20) : (isCore ? Color.FromRgb(150, 150, 150) : Colors.White));
+                lbl.Background = new SolidColorBrush(isSelected ? Color.FromRgb(0, 108, 190) : Color.FromRgb(240, 243, 246));
+                lbl.BorderBrush = new SolidColorBrush(isSelected ? Color.FromRgb(0, 152, 255) : Color.FromRgb(215, 220, 226));
+                if (lbl.Child is TextBlock txt)
+                {
+                    txt.Foreground = new SolidColorBrush(isSelected ? Colors.White : (isCore ? Color.FromRgb(100, 105, 115) : Color.FromRgb(30, 35, 45)));
+                }
+            }
+            else
+            {
+                lbl.Background = new SolidColorBrush(isSelected ? Color.FromRgb(0, 122, 204) : Color.FromRgb(55, 55, 58));
+                lbl.BorderBrush = new SolidColorBrush(isSelected ? Color.FromRgb(0, 152, 255) : Color.FromRgb(85, 85, 85));
+                if (lbl.Child is TextBlock txt)
+                {
+                    txt.Foreground = new SolidColorBrush(isSelected ? Colors.White : (isCore ? Color.FromRgb(180, 180, 180) : Color.FromRgb(245, 245, 245)));
+                }
             }
         }
 
@@ -257,7 +327,7 @@ namespace OpenCadIme.UI.ModernWpf
         private void ShowToastStatus(string message, bool isWarning = false)
         {
             lblStatus.Text = message;
-            lblStatus.Foreground = new SolidColorBrush(isWarning ? Color.FromRgb(240, 71, 71) : Color.FromRgb(0, 210, 211));
+            lblStatus.Foreground = new SolidColorBrush(isWarning ? Color.FromRgb(255, 107, 107) : Color.FromRgb(0, 229, 255));
             lblStatus.Visibility = Visibility.Visible;
             statusTimer.Stop(); statusTimer.Start();
         }
@@ -271,9 +341,47 @@ namespace OpenCadIme.UI.ModernWpf
             }
         }
 
+        private void LoadIconDynamically()
+        {
+            try
+            {
+                string assemblyName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                Uri iconUri = new Uri($"pack://application:,,,/{assemblyName};component/Resources/icon.ico", UriKind.Absolute);
+                var bmp = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
+                this.Icon = bmp;
+                if (imgLogo != null) imgLogo.Source = bmp;
+                return;
+            }
+            catch { }
+
+            try
+            {
+                string dllDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                if (!string.IsNullOrEmpty(dllDir))
+                {
+                    string localIco = System.IO.Path.Combine(dllDir, "icon.ico");
+                    if (System.IO.File.Exists(localIco))
+                    {
+                        var bmp = new System.Windows.Media.Imaging.BitmapImage(new Uri(localIco, UriKind.Absolute));
+                        this.Icon = bmp;
+                        if (imgLogo != null) imgLogo.Source = bmp;
+                    }
+                }
+            }
+            catch { }
+        }
+
         private void BtnClose_Click(object sender, RoutedEventArgs e) { this.Close(); }
-        private void TxtSearch_TextChanged(object sender, TextChangedEventArgs e) { FilterTagsVisibility(); }
+        private void TxtSearch_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (txtSearchWatermark != null)
+            {
+                txtSearchWatermark.Visibility = string.IsNullOrEmpty(txtSearch.Text) ? Visibility.Visible : Visibility.Collapsed;
+            }
+            FilterTagsVisibility();
+        }
         private void TxtNewCmd_KeyDown(object sender, KeyEventArgs e) { }
+        private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) { if (e.LeftButton == MouseButtonState.Pressed) this.DragMove(); }
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) { if (e.LeftButton == MouseButtonState.Pressed) this.DragMove(); }
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e) { Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true }); e.Handled = true; }
     }

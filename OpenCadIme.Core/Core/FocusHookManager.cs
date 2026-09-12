@@ -20,6 +20,11 @@ namespace OpenCadIme.Core
             _hookDelegate = new Win32API.WinEventDelegate(WinEventCallback);
         }
 
+        public void ResetFocus()
+        {
+            CurrentFocusHwnd = IntPtr.Zero;
+        }
+
         public void StartListening()
         {
             if (_disposed || _winEventHook != IntPtr.Zero) return;
@@ -36,7 +41,7 @@ namespace OpenCadIme.Core
             }
             catch (Exception ex)
             {
-                Logger.Error("FocusHookManager", "挂载惰性钩子失败", ex);
+                Logger.Error("FocusHookManager", "挂载焦点钩子失败", ex);
             }
         }
 

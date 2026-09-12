@@ -22,7 +22,7 @@ namespace OpenCadIme.UI
             "TABLE", "TABLEDIT", "TOBJEDIT","BEDIT",
             "SAVEAS", "EXPORT", "WBLOCK", "TABLEEXPORT", "OPEN", "NEW", "PUBLISH", "SAVE", "QSAVE",
             "BLOCK", "_BLOCK", "BMAKE", "RENAME", "_RENAME", "STYLE", "LAYER", "_LAYER", "DIMSTYLE", "GROUP",
-            "PLOT", "PAGESETUP", "QSELECT", "FILTER", "HATCH", "BHATCH","_TEXTEDIT"
+            "PLOT", "PAGESETUP", "QSELECT", "FILTER", "HATCH", "BHATCH", "_TEXTEDIT", "TEXTEDIT", "DIMEDIT", "DIMTEDIT"
         };
 
         public static readonly string[] InitialPluginCommands = {
@@ -33,7 +33,10 @@ namespace OpenCadIme.UI
             "DD", "AF", "AT", "AB", "ABB", "IVT_TextEdit", "IVT_TextSerial",
             "IVT_AttEdit", "IVT_BlockRename", "YX_CK", "YX_MJ", "YX_WT",
             "DHSHR", "DHBJ", "WZSHR", "TYBJ", "WZPL", "BZPL",
-            "YPZ", "XXBZH", "PMZ", "LMBZ", "PMMZ", "SBMC","TTEXT", "SMWZ"
+            "YPZ", "XXBZH", "PMZ", "LMBZ", "PMMZ", "SBMC","TTEXT", "SMWZ",
+            "TMTEXT", "TCH_TEXT", "TCH_DHWZ", "TCH_TMTEXT", "TCH_TTEXT", "WZ", "HZ", "TXT", "TT",
+            "ZDBZ", "TCH_ZDBZ", "GZDBZ", "GBZWZ", "GBZ", "GZDWZ", "GZMWZ", "TCH_DIMEDIT", "TCH_TEXTEDIT",
+            "TCH_DIMENSION", "BDBZ", "KDBZ", "DMBZ", "PGBZ", "JDBZ", "HDBZ", "BXBZ", "ZBBZ", "DXBZ", "TYBZ", "CGBZ", "QPBZ"
         };
 
         public static List<string> ReadAllCommandsFromDisk()

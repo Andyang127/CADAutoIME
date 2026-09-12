@@ -45,10 +45,46 @@ namespace OpenCadIme.Core
                 Document doc = Application.DocumentManager.MdiActiveDocument;
                 if (doc == null || doc.IsDisposed) return CommandCategory.None;
 
+                // 核心地面真值比对：优先以 AutoCAD 原生 CMDNAMES 系统变量为准，彻底防止第三方命令状态残留
+                object cmdVar = null;
+                try { cmdVar = Application.GetSystemVariable("CMDNAMES"); } catch { }
+                string activeCmds = cmdVar != null ? cmdVar.ToString().Trim() : string.Empty;
+
+                if (string.IsNullOrEmpty(activeCmds))
+                {
+                    // CAD 当前无任何运行中命令（完全空闲），彻底清空任何历史残留
+                    lock (_textCmdLock)
+                    {
+                        _textCommandActiveDocs[doc] = CommandCategory.None;
+                    }
+                    return CommandCategory.None;
+                }
+
+                // 检查当前实际运行的命令是否匹配白名单
+                string[] cmds = activeCmds.Split('\'');
+                for (int i = cmds.Length - 1; i >= 0; i--)
+                {
+                    string c = cmds[i].Trim();
+                    if (!string.IsNullOrEmpty(c))
+                    {
+                        CommandCategory cat = GetCommandCategoryFast(c);
+                        if (cat != CommandCategory.None)
+                        {
+                            lock (_textCmdLock)
+                            {
+                                _textCommandActiveDocs[doc] = cat;
+                            }
+                            return cat;
+                        }
+                    }
+                }
+
+                // 若当前实际运行的命令（如 LINE, REC, REGEN 等）均非白名单文本命令，直接置为 None
                 lock (_textCmdLock)
                 {
-                    return _textCommandActiveDocs.TryGetValue(doc, out CommandCategory cat) ? cat : CommandCategory.None;
+                    _textCommandActiveDocs[doc] = CommandCategory.None;
                 }
+                return CommandCategory.None;
             }
             catch { return CommandCategory.None; }
         }
@@ -73,22 +109,13 @@ namespace OpenCadIme.Core
                     Document doc = _hookedDocs[i];
                     try
                     {
-                        if (doc == null || doc.IsDisposed)
+                        if (doc == null || doc.IsDisposed || (e.Document != null && doc.UnmanagedObject == e.Document.UnmanagedObject))
                         {
-                            DetachEventsUnsafe(doc);
-                            _hookedDocs.RemoveAt(i);
-                            continue;
-                        }
-
-                        if (e.Document != null && doc.UnmanagedObject == e.Document.UnmanagedObject)
-                        {
-                            DetachEventsUnsafe(doc);
                             _hookedDocs.RemoveAt(i);
                         }
                     }
                     catch
                     {
-                        DetachEventsUnsafe(doc);
                         _hookedDocs.RemoveAt(i);
                     }
                 }
@@ -142,8 +169,7 @@ namespace OpenCadIme.Core
                 try
                 {
                     cmdName = e.GlobalCommandName;
-
-                    Logger.Info("CommandInterceptor", $"抓取到底层静默命令触发: {cmdName}");
+                    Logger.Info("CommandInterceptor", $"抓取到底层命令触发: {cmdName}");
                 }
                 catch
                 {
@@ -223,7 +249,19 @@ namespace OpenCadIme.Core
             string normalized = NormalizeCommand(rawCmd);
             if (string.IsNullOrEmpty(normalized)) return CommandCategory.None;
 
-            return _whitelistCommands.ContainsKey(normalized) ? _whitelistCommands[normalized] : CommandCategory.None;
+            if (_whitelistCommands.ContainsKey(normalized))
+                return _whitelistCommands[normalized];
+
+            // 针对天正及第三方带前缀命令（如 T80_DHWZ、TCH_DHWZ 等）按基名匹配
+            int underscoreIdx = normalized.IndexOf('_');
+            if (underscoreIdx > 0 && underscoreIdx < normalized.Length - 1)
+            {
+                string stripped = normalized.Substring(underscoreIdx + 1);
+                if (_whitelistCommands.ContainsKey(stripped))
+                    return _whitelistCommands[stripped];
+            }
+
+            return CommandCategory.None;
         }
 
         private static string NormalizeCommand(string input)

@@ -24,14 +24,56 @@ namespace OpenCadIme.UI.LegacyForm
         private static extern int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
         #endregion
 
-        #region 现代化暗黑主题配色
-        private static readonly Color ThemeBgBase = Color.FromArgb(30, 30, 30);
-        private static readonly Color ThemeBgSurface = Color.FromArgb(37, 37, 38);
-        private static readonly Color ThemeBgInput = Color.FromArgb(45, 45, 48);
-        private static readonly Color ThemeCyan = Color.FromArgb(0, 210, 211);
-        private static readonly Color ThemeTextMain = Color.FromArgb(240, 240, 240);
-        private static readonly Color ThemeTextMuted = Color.FromArgb(150, 150, 150);
-        private static readonly Color ThemeDanger = Color.FromArgb(240, 71, 71);
+        #region 现代化主题配色 (自适应 CadAutoSnap 极清标准：白色与黑色双套主题)
+        private Color ThemeBgBase = Color.FromArgb(51, 51, 51);      // WindowBg
+        private Color ThemeBgSurface = Color.FromArgb(66, 66, 66);   // CardBg
+        private Color ThemeBgInput = Color.FromArgb(45, 45, 45);     // InputBg
+        private Color ThemeCyan = Color.FromArgb(0, 122, 204);       // AccentColor
+        private Color ThemeTextMain = Color.FromArgb(245, 245, 245); // TextPrimary
+        private Color ThemeTextMuted = Color.FromArgb(180, 180, 180);// TextSecondary
+        private Color ThemeDanger = Color.FromArgb(240, 71, 71);
+        private Color ThemeBorderLine = Color.FromArgb(85, 85, 85);
+        private bool _isDarkTheme = true;
+
+        private void ApplyAutoCadSmartTheme()
+        {
+            _isDarkTheme = true;
+            try
+            {
+                if (Autodesk.AutoCAD.ApplicationServices.Application.Version.Major < 20)
+                {
+                    _isDarkTheme = false;
+                }
+                else
+                {
+                    object themeVar = Autodesk.AutoCAD.ApplicationServices.Application.GetSystemVariable("COLORTHEME");
+                    if (themeVar != null && Convert.ToInt16(themeVar) == 1)
+                        _isDarkTheme = false;
+                }
+            }
+            catch { }
+
+            if (!_isDarkTheme)
+            {
+                ThemeBgBase = ColorTranslator.FromHtml("#F3F3F3");
+                ThemeBgSurface = ColorTranslator.FromHtml("#FFFFFF");
+                ThemeBgInput = ColorTranslator.FromHtml("#F8FAFC");
+                ThemeCyan = ColorTranslator.FromHtml("#006CBE");
+                ThemeTextMain = ColorTranslator.FromHtml("#202020");
+                ThemeTextMuted = ColorTranslator.FromHtml("#606060");
+                ThemeBorderLine = ColorTranslator.FromHtml("#D5D5D5");
+            }
+            else
+            {
+                ThemeBgBase = Color.FromArgb(51, 51, 51);
+                ThemeBgSurface = Color.FromArgb(66, 66, 66);
+                ThemeBgInput = Color.FromArgb(45, 45, 45);
+                ThemeCyan = Color.FromArgb(0, 122, 204);
+                ThemeTextMain = Color.FromArgb(245, 245, 245);
+                ThemeTextMuted = Color.FromArgb(180, 180, 180);
+                ThemeBorderLine = Color.FromArgb(85, 85, 85);
+            }
+        }
         #endregion
 
         #region 字体设计
@@ -75,6 +117,8 @@ namespace OpenCadIme.UI.LegacyForm
                           ControlStyles.AllPaintingInWmPaint |
                           ControlStyles.UserPaint, true);
             this.UpdateStyles();
+
+            ApplyAutoCadSmartTheme();
 
             FontTitle = CreateSafeFont("微软雅黑", 15F, FontStyle.Bold);
             FontSubtitle = CreateSafeFont("Consolas", 10F, FontStyle.Italic);
@@ -135,7 +179,7 @@ namespace OpenCadIme.UI.LegacyForm
             FlowLayoutPanel pnlTitleFlow = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.LeftToRight, Margin = new Padding(0), WrapContents = false };
             pnlTitleFlow.MouseDown += Header_MouseDown;
 
-            Label lblTitle = new Label { Text = $"{AppConstants.PluginShortName} 白名单配置", Font = FontTitle, ForeColor = Color.White, AutoSize = true, Margin = new Padding(0), Anchor = AnchorStyles.Bottom };
+            Label lblTitle = new Label { Text = $"{AppConstants.PluginShortName} 白名单配置", Font = FontTitle, ForeColor = ThemeTextMain, AutoSize = true, Margin = new Padding(0), Anchor = AnchorStyles.Bottom };
             lblTitle.MouseDown += Header_MouseDown;
 
             Label lblVer = new Label { Text = AppConstants.VersionDisplay, Font = FontSubtitle, ForeColor = ThemeCyan, AutoSize = true, Margin = new Padding(4, 0, 0, 3), Anchor = AnchorStyles.Bottom };
@@ -150,7 +194,7 @@ namespace OpenCadIme.UI.LegacyForm
             pnlTitleFlow.Controls.Add(lblVer);
             pnlTitleFlow.Controls.Add(lblCheckUpdate);
 
-            Label lblSlogan = new Label { Text = "配置列表中的指令，在启动时会自动切换为中文输入法。", Font = FontNormal, ForeColor = Color.FromArgb(170, 170, 170), AutoSize = true, Margin = new Padding(2, 6, 0, 0) };
+            Label lblSlogan = new Label { Text = "配置列表中的指令，在启动时会自动切换为中文输入法。", Font = FontNormal, ForeColor = ThemeTextMuted, AutoSize = true, Margin = new Padding(2, 6, 0, 0) };
             lblSlogan.MouseDown += Header_MouseDown;
 
             pnlTextVerticalFlow.Controls.Add(pnlTitleFlow);
@@ -168,7 +212,7 @@ namespace OpenCadIme.UI.LegacyForm
             Panel pnlSearchBox = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 10, 0, 10), BackColor = ThemeBgInput, Padding = new Padding(1) };
             Panel innerSearch = new Panel { Dock = DockStyle.Fill, BackColor = ThemeBgInput, Padding = new Padding(10, 8, 10, 8) };
             txtSearch = new TextBox { Dock = DockStyle.Fill, BorderStyle = BorderStyle.None, BackColor = ThemeBgInput, ForeColor = ThemeTextMuted, Font = FontInput, Text = SearchPlaceholder };
-            txtSearch.GotFocus += delegate { if (txtSearch.Text == SearchPlaceholder) { txtSearch.Text = ""; txtSearch.ForeColor = Color.White; } };
+            txtSearch.GotFocus += delegate { if (txtSearch.Text == SearchPlaceholder) { txtSearch.Text = ""; txtSearch.ForeColor = ThemeTextMain; } };
             txtSearch.LostFocus += delegate { if (string.IsNullOrEmpty(txtSearch.Text) || txtSearch.Text.Trim().Length == 0) { txtSearch.Text = SearchPlaceholder; txtSearch.ForeColor = ThemeTextMuted; } };
             txtSearch.TextChanged += delegate { FilterTagsVisibility(); };
             innerSearch.Controls.Add(txtSearch); pnlSearchBox.Controls.Add(innerSearch); pnlSearchBox.Paint += DrawPanelBorder;
@@ -180,7 +224,7 @@ namespace OpenCadIme.UI.LegacyForm
 
             Panel pnlCustom = new Panel { Dock = DockStyle.Fill, BackColor = ThemeBgSurface, Margin = new Padding(0, 0, 0, 10), Padding = new Padding(15) };
             pnlCustom.Paint += DrawPanelBorder;
-            Label lblCustomTitle = new Label { Text = "我的扩展指令 (须添加命令全称，而非快捷键)", Font = FontNormal, ForeColor = Color.White, Dock = DockStyle.Top, Height = 25 };
+            Label lblCustomTitle = new Label { Text = "我的扩展指令 (须添加命令全称，而非快捷键)", Font = FontNormal, ForeColor = ThemeTextMain, Dock = DockStyle.Top, Height = 25 };
             Panel pnlAddContainer = new Panel { Dock = DockStyle.Top, Height = 36, BackColor = ThemeBgInput, Margin = new Padding(0, 0, 0, 10) };
             pnlAddContainer.Paint += DrawPanelBorder;
             txtNewCmd = new TextBox { BorderStyle = BorderStyle.None, BackColor = ThemeBgInput, ForeColor = ThemeTextMuted, Font = FontInput, Text = AddPlaceholder, Location = new Point(10, 9), Width = 350, CharacterCasing = CharacterCasing.Upper };
@@ -213,8 +257,8 @@ namespace OpenCadIme.UI.LegacyForm
 
             Panel pnlMode = new Panel { Width = 350, Height = 28, Location = new Point(0, 0) };
             Label lblMode = new Label { Text = "接管模式：", ForeColor = ThemeTextMuted, AutoSize = true, Location = new Point(0, 4), Font = FontNormal };
-            rbProcess = new RadioButton { Text = "进程控制 (推荐)", ForeColor = Color.White, AutoSize = true, Location = new Point(70, 2), Font = FontNormal, Cursor = Cursors.Hand };
-            rbGlobal = new RadioButton { Text = "全局控制", ForeColor = Color.White, AutoSize = true, Location = new Point(190, 2), Font = FontNormal, Cursor = Cursors.Hand };
+            rbProcess = new RadioButton { Text = "进程控制 (推荐)", ForeColor = ThemeTextMain, AutoSize = true, Location = new Point(70, 2), Font = FontNormal, Cursor = Cursors.Hand };
+            rbGlobal = new RadioButton { Text = "全局控制", ForeColor = ThemeTextMain, AutoSize = true, Location = new Point(190, 2), Font = FontNormal, Cursor = Cursors.Hand };
 
             ToolTip tt = new ToolTip();
             tt.SetToolTip(rbProcess, "仅在 CAD 窗口激活时切换，切出到微信/浏览器保持原样。适合微信输入法等现代框架。");
@@ -289,7 +333,7 @@ namespace OpenCadIme.UI.LegacyForm
         private void DrawPanelBorder(object sender, PaintEventArgs e)
         {
             Panel p = sender as Panel;
-            using (Pen borderPen = new Pen(Color.FromArgb(60, 60, 60), 1))
+            using (Pen borderPen = new Pen(ThemeBorderLine, 1))
             {
                 e.Graphics.DrawRectangle(borderPen, 0, 0, p.Width - 1, p.Height - 1);
             }
@@ -300,7 +344,17 @@ namespace OpenCadIme.UI.LegacyForm
             if (e.Button == MouseButtons.Left) { ReleaseCapture(); SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0); }
         }
 
-        private void SetDarkScrollbar(Control ctrl) { try { SetWindowTheme(ctrl.Handle, "DarkMode_Explorer", null); } catch { } }
+        private void SetDarkScrollbar(Control ctrl)
+        {
+            try
+            {
+                if (_isDarkTheme)
+                    SetWindowTheme(ctrl.Handle, "DarkMode_Explorer", null);
+                else
+                    SetWindowTheme(ctrl.Handle, "Explorer", null);
+            }
+            catch { }
+        }
 
         private void ShowToastStatus(string message, bool isWarning = false)
         {
@@ -342,9 +396,9 @@ namespace OpenCadIme.UI.LegacyForm
 
             foreach (string cmd in cmds)
             {
-                Label chip = new Label { Text = cmd, AutoSize = true, Font = Chip, BackColor = ThemeBgInput, ForeColor = isCore ? ThemeTextMuted : Color.White, Padding = new Padding(12, 6, 12, 6), Margin = new Padding(4), Cursor = Cursors.Hand, Tag = cmd };
+                Label chip = new Label { Text = cmd, AutoSize = true, Font = Chip, BackColor = ThemeBgInput, ForeColor = isCore ? ThemeTextMuted : (_isDarkTheme ? Color.White : ThemeTextMain), Padding = new Padding(12, 6, 12, 6), Margin = new Padding(4), Cursor = Cursors.Hand, Tag = cmd };
 
-                chip.MouseEnter += delegate { if (chip != selectedCustomTag && chip != selectedCoreTag) chip.BackColor = Color.FromArgb(70, 70, 75); };
+                chip.MouseEnter += delegate { if (chip != selectedCustomTag && chip != selectedCoreTag) chip.BackColor = _isDarkTheme ? Color.FromArgb(70, 70, 75) : Color.FromArgb(220, 224, 230); };
                 chip.MouseLeave += delegate { StyleChip(chip, chip == selectedCustomTag || chip == selectedCoreTag, isCore); };
                 chip.Click += Chip_Click;
                 chip.DoubleClick += Chip_DoubleClick;
@@ -375,7 +429,8 @@ namespace OpenCadIme.UI.LegacyForm
 
         private void StyleChip(Label lbl, bool isSelected, bool isCore)
         {
-            lbl.BackColor = isSelected ? ThemeCyan : ThemeBgInput; lbl.ForeColor = isSelected ? Color.FromArgb(20, 20, 20) : (isCore ? ThemeTextMuted : Color.White);
+            lbl.BackColor = isSelected ? ThemeCyan : ThemeBgInput;
+            lbl.ForeColor = isSelected ? Color.White : (isCore ? ThemeTextMuted : (_isDarkTheme ? Color.White : ThemeTextMain));
         }
 
         private void Chip_DoubleClick(object sender, EventArgs e)

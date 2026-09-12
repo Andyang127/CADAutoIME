@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net8.0-windows</TargetFramework>
@@ -39,17 +39,17 @@
 
 	<ItemGroup>
 		<Reference Include="AcCoreMgd">
-			<HintPath>..\..\lib\R25.0_CAD_2025\AcCoreMgd.dll</HintPath>
+			<HintPath>..\..\Libs\AutoCAD\Net8.0_2025-2026\AcCoreMgd.dll</HintPath>
 			<Private>False</Private>
 			<SpecificVersion>False</SpecificVersion>
 		</Reference>
 		<Reference Include="AcDbMgd">
-			<HintPath>..\..\lib\R25.0_CAD_2025\AcDbMgd.dll</HintPath>
+			<HintPath>..\..\Libs\AutoCAD\Net8.0_2025-2026\AcDbMgd.dll</HintPath>
 			<Private>False</Private>
 			<SpecificVersion>False</SpecificVersion>
 		</Reference>
 		<Reference Include="AcMgd">
-			<HintPath>..\..\lib\R25.0_CAD_2025\AcMgd.dll</HintPath>
+			<HintPath>..\..\Libs\AutoCAD\Net8.0_2025-2026\AcMgd.dll</HintPath>
 			<Private>False</Private>
 			<SpecificVersion>False</SpecificVersion>
 		</Reference>

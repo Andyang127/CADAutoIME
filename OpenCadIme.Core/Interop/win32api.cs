@@ -95,6 +95,79 @@ namespace OpenCadIme.Interop
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
 
+        [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
+        public static extern IntPtr GetParent(IntPtr hWnd);
+
+        public static bool IsDynamicInputWindow(IntPtr hwnd)
+        {
+            if (hwnd == IntPtr.Zero) return false;
+            try
+            {
+                StringBuilder sb = new StringBuilder(128);
+                IntPtr cur = hwnd;
+                int depth = 0;
+                while (cur != IntPtr.Zero && depth < 6)
+                {
+                    sb.Length = 0;
+                    GetClassName(cur, sb, sb.Capacity);
+                    string name = sb.ToString();
+                    if (name.IndexOf("dyninput", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("tooltip", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("aduitooltip", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("autocomp", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        return true;
+                    }
+                    cur = GetParent(cur);
+                    depth++;
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        public static bool IsDialogOrPanelControl(IntPtr hwnd)
+        {
+            if (hwnd == IntPtr.Zero) return false;
+            try
+            {
+                StringBuilder sb = new StringBuilder(128);
+                IntPtr cur = hwnd;
+                int depth = 0;
+                while (cur != IntPtr.Zero && depth < 8)
+                {
+                    sb.Length = 0;
+                    GetClassName(cur, sb, sb.Capacity);
+                    string name = sb.ToString();
+
+                    if (name.IndexOf("#32770", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("dialog", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("controlbar", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("palette", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("dock", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("adui", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("acui", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("windowsforms", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("hwndwrapper", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        return true;
+                    }
+
+                    int style = GetWindowLong(cur, -16);
+                    const int WS_CAPTION = 0x00C00000;
+                    if ((style & WS_CAPTION) == WS_CAPTION && cur != hwnd)
+                    {
+                        return true;
+                    }
+
+                    cur = GetParent(cur);
+                    depth++;
+                }
+            }
+            catch { }
+            return false;
+        }
+
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         public static extern uint GetCurrentProcessId();
         #endregion

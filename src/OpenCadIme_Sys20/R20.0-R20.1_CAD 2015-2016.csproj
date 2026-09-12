@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -6,6 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4F4E094C-1D48-4C3E-9E4D-976FC0F5A715}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>OpenCadIme_Sys20</RootNamespace>
     <AssemblyName>OpenCadIme_Sys20</AssemblyName>
@@ -52,15 +53,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="AcCoreMgd">
-      <HintPath>..\..\lib\R20.0-R20.1_CAD_2015-2016\AcCoreMgd.dll</HintPath>
+      <HintPath>..\..\Libs\AutoCAD\Net4.5_2015-2016\accoremgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="AcDbMgd">
-      <HintPath>..\..\lib\R20.0-R20.1_CAD_2015-2016\AcDbMgd.dll</HintPath>
+      <HintPath>..\..\Libs\AutoCAD\Net4.5_2015-2016\acdbmgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="AcMgd">
-      <HintPath>..\..\lib\R20.0-R20.1_CAD_2015-2016\AcMgd.dll</HintPath>
+      <HintPath>..\..\Libs\AutoCAD\Net4.5_2015-2016\acmgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="PresentationCore" />

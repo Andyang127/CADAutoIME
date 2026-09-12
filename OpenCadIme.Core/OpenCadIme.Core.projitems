@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
@@ -24,18 +24,21 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)UpdateManager.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkVersion)' != 'v3.5'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'net35' and '$(TargetFrameworkVersion)' != 'v3.5'">
     <Compile Include="$(MSBuildThisFileDirectory)UI\ModernWpf\WindowManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ModernWpf\ConfigWindow.xaml.cs">
       <DependentUpon>ConfigWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkVersion)' != 'v3.5'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'net35' and '$(TargetFrameworkVersion)' != 'v3.5'">
     <Page Include="$(MSBuildThisFileDirectory)UI\ModernWpf\ConfigWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'net35' and '$(TargetFrameworkVersion)' != 'v3.5'">
+    <Resource Include="$(MSBuildThisFileDirectory)Resources\icon.ico" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Interop\" />
