@@ -816,6 +816,18 @@
                     <i class="fa-regular fa-copy"></i> 点击复制
                 </button>
             </div>
+
+            <h3>🔹 3. 手动测试呼出 HUD 欢迎面板</h3>
+            <p>在 CAD 命令行输入该命令，可随时随地手动唤起屏幕中央下方的 HUD 欢迎悬浮窗，用于快速验证当前插件运行状态与版本信息。</p>
+            <div class="command-card">
+                <div class="command-text">
+                    <span class="prefix">COMMAND:</span>
+                    <code class="actual-cmd" id="cmd-3">TESTHUD</code>
+                </div>
+                <button class="copy-btn" onclick="copyCommand('cmd-3', this)">
+                    <i class="fa-regular fa-copy"></i> 点击复制
+                </button>
+            </div>
         </section>
 
         <!-- 兼容版本 -->
@@ -916,6 +928,8 @@
                             <li><strong>🔄【ESC 键与空白绘图区即刻复位】</strong>：强化 ESC 取消键与鼠标点击绘图区的即时感知，按下 ESC 或点击空白视口立即重置焦点缓存与状态防抖锁，100% 毫秒级复位至纯英文命令待命状态。</li>
                             <li><strong>🛠️【状态决策树重构】</strong>：优化状态机判定优先级，确保在绘图视口与常规命令执行时保持纯英文待命；完善按键消息过滤与在位编辑感知。</li>
                             <li><strong>📋【命令生命周期协同】</strong>：结合 AutoCAD 系统变量 <code>CMDNAMES</code> 校验与交互提示阶段（点拾取/数值输入）精准过滤，提高各阶段状态判断准确率。</li>
+                            <li><strong>💡【HUD 欢迎面板就绪感知与多波次轮询】</strong>：解决冷启动或载入大型图纸时单次定时器过期失效导致 HUD 漏弹的问题，引入 300ms 多波次（最多 20 次探测）视口与文档就绪检测；仅在成功呈现后后置写入标记；新增 <code>TESTHUD</code> / <code>SHOWHUD</code> 命令支持随时预览测试。</li>
+                            <li><strong>🛠️【安装向导注册表自愈】</strong>：在 Inno Setup 安装向导（安装与卸载阶段）自动清理重置 <code>WelcomeHud</code> 历史注册表残留，彻底解决覆盖重装后无法弹出欢迎提示与版本信息的缺陷。</li>
                         </ul>
                     </div>
                 </div>

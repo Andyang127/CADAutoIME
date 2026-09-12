@@ -402,6 +402,14 @@ begin
     RegWriteStringValue(HKEY_CURRENT_USER, 'Software\OpenCadIme', 'InstallDir', InstallRoot);
     RegWriteStringValue(HKEY_CURRENT_USER, 'Software\OpenCadIme\CADAutoIme', 'Version', '{#MyAppVersion}');
 
+    // 清理当前及历史残留的 WelcomeHud 标记，确保每次安装或覆盖重装后，首次打开 CAD 必定触发 HUD 欢迎提示与版本展示
+    if RegKeyExists(HKEY_CURRENT_USER, 'Software\OpenCadIme\CADAutoIme\WelcomeHud') then
+      RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\OpenCadIme\CADAutoIme\WelcomeHud');
+    if RegKeyExists(HKEY_CURRENT_USER, 'Software\QianZuiMoYu\CADAutoIme\WelcomeHud') then
+      RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\QianZuiMoYu\CADAutoIme\WelcomeHud');
+    if RegKeyExists(HKEY_CURRENT_USER, 'Software\OpenCadIme\WelcomeHud') then
+      RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\OpenCadIme\WelcomeHud');
+
     if Assigned(FoundRNames) and Assigned(AcadVersionPage) then
     begin
       for i := 0 to AcadVersionPage.CheckListBox.Items.Count - 1 do
@@ -483,6 +491,14 @@ begin
         end;
       end;
     end;
+
+    // 无论用户是否保留自定义命令配置，均清理 WelcomeHud 标记，确保日后重装后能正常显示 HUD 欢迎条
+    if RegKeyExists(HKEY_CURRENT_USER, 'Software\OpenCadIme\CADAutoIme\WelcomeHud') then
+      RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\OpenCadIme\CADAutoIme\WelcomeHud');
+    if RegKeyExists(HKEY_CURRENT_USER, 'Software\QianZuiMoYu\CADAutoIme\WelcomeHud') then
+      RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\QianZuiMoYu\CADAutoIme\WelcomeHud');
+    if RegKeyExists(HKEY_CURRENT_USER, 'Software\OpenCadIme\WelcomeHud') then
+      RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\OpenCadIme\WelcomeHud');
 
     if G_DeleteUserData then
     begin

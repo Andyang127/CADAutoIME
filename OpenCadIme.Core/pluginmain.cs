@@ -140,7 +140,31 @@ namespace OpenCadIme
         }
 #endif
 
-        private bool CheckAndSetHudShownFlag()
+        private bool ShouldShowHudWelcome()
+        {
+            try
+            {
+                string cadVersion = Application.Version.ToString();
+                string regPath = $@"{AppConstants.RegistryPath}\WelcomeHud";
+
+                using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(regPath, false))
+                {
+                    if (key == null) return true;
+                    object val = key.GetValue(cadVersion);
+                    if (val != null && string.Equals(val.ToString().Trim(), AppConstants.Version.Trim(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+                    return true;
+                }
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private void MarkHudShown()
         {
             try
             {
@@ -149,22 +173,10 @@ namespace OpenCadIme
 
                 using (var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(regPath))
                 {
-                    object val = key.GetValue(cadVersion);
-                    if (val != null && string.Equals(val.ToString().Trim(), AppConstants.Version.Trim(), StringComparison.OrdinalIgnoreCase))
-                    {
-                        return false;
-                    }
-                    else
-                    {
-                        key.SetValue(cadVersion, AppConstants.Version);
-                        return true;
-                    }
+                    key?.SetValue(cadVersion, AppConstants.Version);
                 }
             }
-            catch
-            {
-                return false;
-            }
+            catch { }
         }
 
         private bool TryInitialize(bool isManualCommand = false)
@@ -200,7 +212,7 @@ namespace OpenCadIme
                 _isFullyInitialized = true;
                 EnforceImeState();
 
-                if (!isManualCommand && CheckAndSetHudShownFlag())
+                if (!isManualCommand && ShouldShowHudWelcome())
                 {
                     _pendingHudVersion = AppConstants.Version;
                     ScheduleHudWelcome();
@@ -227,6 +239,8 @@ namespace OpenCadIme
             }
         }
 
+        private int _hudRetryCount = 0;
+
         private void ScheduleHudWelcome()
         {
             try
@@ -238,25 +252,49 @@ namespace OpenCadIme
                     _hudDelayTimer = null;
                 }
 
+                _hudRetryCount = 0;
                 _hudDelayTimer = new System.Windows.Forms.Timer();
                 _hudDelayTimer.Interval = 300;
                 _hudDelayTimer.Tick += delegate (object sender, EventArgs e)
                 {
                     try
                     {
-                        if (_hudDelayTimer != null)
+                        _hudRetryCount++;
+                        Document doc = null;
+                        try
                         {
-                            _hudDelayTimer.Stop();
-                            _hudDelayTimer.Dispose();
-                            _hudDelayTimer = null;
+                            if (Application.DocumentManager != null && Application.DocumentManager.Count > 0)
+                            {
+                                doc = Application.DocumentManager.MdiActiveDocument;
+                            }
+                        }
+                        catch { }
+
+                        if (doc != null && doc.Editor != null)
+                        {
+                            if (_hudDelayTimer != null)
+                            {
+                                _hudDelayTimer.Stop();
+                                _hudDelayTimer.Dispose();
+                                _hudDelayTimer = null;
+                            }
+
+                            if (_hudManager != null && !string.IsNullOrEmpty(_pendingHudVersion))
+                            {
+                                _hudManager.ShowWelcomeMessage(doc, _pendingHudVersion);
+                                MarkHudShown();
+                            }
+                            return;
                         }
 
-                        if (_hudManager != null && !string.IsNullOrEmpty(_pendingHudVersion))
+                        // 若图纸暂未完全就绪，允许重试最多 20 次（约 6 秒，足以覆盖任何 CAD 冷启动时差）
+                        if (_hudRetryCount >= 20)
                         {
-                            if (Application.DocumentManager.Count > 0)
+                            if (_hudDelayTimer != null)
                             {
-                                Document doc = Application.DocumentManager.MdiActiveDocument;
-                                if (doc != null) _hudManager.ShowWelcomeMessage(doc, _pendingHudVersion);
+                                _hudDelayTimer.Stop();
+                                _hudDelayTimer.Dispose();
+                                _hudDelayTimer = null;
                             }
                         }
                     }
@@ -501,6 +539,30 @@ namespace OpenCadIme
         public static void CmdImeSetting() => ExecuteShowCustomConfig();
 
         public static void ShowCustomConfigDialog() => ExecuteShowCustomConfig();
+
+        [CommandMethod("TESTHUD")]
+        public static void CmdTestHud() => ExecuteShowHud();
+
+        [CommandMethod("SHOWHUD")]
+        public static void CmdShowHud() => ExecuteShowHud();
+
+        private static void ExecuteShowHud()
+        {
+            try
+            {
+                Document doc = Application.DocumentManager.MdiActiveDocument;
+                if (doc != null)
+                {
+                    if (Instance == null) Instance = new PluginMain();
+                    if (Instance._hudManager == null) Instance._hudManager = new UI.HudManager();
+                    Instance._hudManager.ShowWelcomeMessage(doc, AppConstants.Version);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show("唤起 HUD 失败: " + ex.Message);
+            }
+        }
 
         private static void ExecuteShowCustomConfig()
         {
