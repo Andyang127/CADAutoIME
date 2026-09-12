@@ -922,14 +922,11 @@
                     </div>
                     <div class="timeline-content">
                         <ul>
-                            <li><strong>⚡【Win32 TSF 原生规范与 GUID 架构级校准】</strong>：依照微软 Windows SDK (<code>msctf.idl</code>) 标准全面校准 TSF 原生 COM 接口与隔间 GUID 定义（精准纠正 <code>IID_ITfCompartmentMgr</code>、<code>IID_ITfCompartment</code> 与 <code>GUID_COMPARTMENT_KEYBOARD_OPENCLOSE</code> 等历史定义偏差），打通 Windows 10/11 现代输入法（微软拼音、搜狗、微信输入法等）底层双轨 COM 无损直连。</li>
-                            <li><strong>🚫【彻底消灭乒乓切换死循环与界面卡顿】</strong>：彻底移除定时器主动轮询与冗余窗口消息广播（<code>PostMessage WM_INPUTLANGCHANGEREQUEST</code>），引入状态幂等防抖门禁（Idempotent State Guard），同一目标状态仅耗时 &lt; 0.05ms 生效一次，彻底消除天正等第三方插件界面下输入法频繁在“中/英”之间跳变闪烁、鼠标悬停卡顿与消息风暴。</li>
-                            <li><strong>🎯【文本控件焦点最高裁决权】</strong>：深度兼容天正建筑、探索者、鸿业、源泉设计、CASS 及所有第三方 ObjectARX / MFC 弹窗与控制面板，采用前台活动线程真实焦点实时判定，保障文本控件内 100% 稳定输入中文，杜绝画布逻辑反客为主压制弹窗。</li>
-                            <li><strong>🔄【ESC 键与空白绘图区即刻复位】</strong>：强化 ESC 取消键与鼠标点击绘图区的即时感知，按下 ESC 或点击空白视口立即重置焦点缓存与状态防抖锁，100% 毫秒级复位至纯英文命令待命状态。</li>
-                            <li><strong>🛠️【状态决策树重构】</strong>：优化状态机判定优先级，确保在绘图视口与常规命令执行时保持纯英文待命；完善按键消息过滤与在位编辑感知。</li>
-                            <li><strong>📋【命令生命周期协同】</strong>：结合 AutoCAD 系统变量 <code>CMDNAMES</code> 校验与交互提示阶段（点拾取/数值输入）精准过滤，提高各阶段状态判断准确率。</li>
-                            <li><strong>💡【HUD 欢迎面板就绪感知与多波次轮询】</strong>：解决冷启动或载入大型图纸时单次定时器过期失效导致 HUD 漏弹的问题，引入 300ms 多波次（最多 20 次探测）视口与文档就绪检测；仅在成功呈现后后置写入标记；新增 <code>TESTHUD</code> / <code>SHOWHUD</code> 命令支持随时预览测试。</li>
-                            <li><strong>🛠️【安装向导注册表自愈】</strong>：在 Inno Setup 安装向导（安装与卸载阶段）自动清理重置 <code>WelcomeHud</code> 历史注册表残留，彻底解决覆盖重装后无法弹出欢迎提示与版本信息的缺陷。</li>
+                            <li><strong>⚡【彻底消灭闪烁与卡顿】</strong>：重构底层通道，彻底消除输入法频繁跳变闪烁与界面卡顿，支持按 Shift 键原生自由切换中英文。</li>
+                            <li><strong>🎯【天正及第三方插件深度兼容】</strong>：天正建筑、探索者、源泉、CASS 等第三方插件的文本框与对话框，自动稳定保持中文输入，不再被绘图区误切英文。</li>
+                            <li><strong>🛡️【快捷键与动态输入纯英文保护】</strong>：敲击常规绘图命令（如 L、C、REC）及动态输入时，100% 保持纯英文，杜绝拼音候选框与命令框遮挡冲突。</li>
+                            <li><strong>🔄【ESC 键与点击绘图区即刻复位】</strong>：按下 ESC 键或鼠标点击空白视口，毫秒级瞬时恢复纯英文命令待命状态。</li>
+                            <li><strong>💡【HUD 欢迎提示修复与测试命令】</strong>：修复重新安装或升级后欢迎悬浮窗不弹出的缺陷；新增 <code>TESTHUD</code> / <code>SHOWHUD</code> 命令支持随时手动测试验证。</li>
                         </ul>
                     </div>
                 </div>
