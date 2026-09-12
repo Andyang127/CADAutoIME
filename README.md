@@ -63,11 +63,11 @@
 安装后无需额外配置即可正常使用。插件会自动识别当前执行的命令类型，切换对应的输入法状态。**常用控制命令：**
 
 
-| 命令 | 别名 | 功能说明 |
-|:---|:---|:---|
-| `CUSTOMAUTOIME` | `ImeConfig`, `ImeSetting` | 打开白名单配置面板，可视化管理命令与词条 |
-| `TOGGLEAUTOIME` | `OpenCadIme`, `InkIme`, `CadIme` | 一键全局开启 / 关闭输入法自动切换功能 |
-| `TESTHUD` | `SHOWHUD` | 手动测试呼出 HUD 欢迎面板（验证环境与版本显示） |
+| 命令          | 别名                           | 功能说明                                                         |
+|:----------------|:---------------------------------|:---------------------------------------------------------------------|
+| `CUSTOMAUTOIME` | `ImeConfig`, `ImeSetting`        | 打开白名单配置面板，可视化管理命令与词条         |
+| `TOGGLEAUTOIME` | `OpenCadIme`, `InkIme`, `CadIme` | 一键全局开启 / 关闭输入法自动切换功能               |
+| `TESTHUD`       | `SHOWHUD`                        | 手动测试呼出 HUD 欢迎面板（验证环境与版本显示） |
 
 
 ---
@@ -228,29 +228,29 @@ Visual Studio 2022+
 
 ```
 
-CAD Auto IME/                
-├── build/                # 编译输出目录                
-├── installer/            # 安装包项目 (Inno Setup)                
-├── Libs/                 # AutoCAD SDK 依赖 (CAD DLLs)                
-│   └── AutoCAD/                
-│       ├── Net2.0_2007-2009/                
-│       ├── Net3.5_2010-2012/                
-│       ... (其他版本)                
-│       └── Net10.0_2027/                
-├── OpenCadIme.Core/      # 核心逻辑共享项目 (Shared Project)                
-│   ├── Core/             # 核心逻辑 (CommandInterceptor, ConfigManager 等)                
-│   ├── Interop/          # Win32 API 调用                
-│   ├── UI/               # UI 逻辑 (HudManager, LegacyForm, ModernWpf)                
-│   ├── AppConstants.cs   # 常量定义                
-│   ├── PluginMain.cs     # 插件入口                
-│   └── UpdateManager.cs  # 更新检查                
-├── src/                  # 各版本适配层 (版本差异化包装)                
-│   ├── OpenCadIme_Sys17/                
-│   ├── OpenCadIme_Sys18/                
-│   ... (其他 SysXX 项目)                
-│   └── OpenCadIme_Sys27/                
-├── CAD Auto IME.sln      # Visual Studio 解决方案文件                
-├── LICENSE.txt           # 开源协议                
+CAD Auto IME/                    
+├── build/                # 编译输出目录                    
+├── installer/            # 安装包项目 (Inno Setup)                    
+├── Libs/                 # AutoCAD SDK 依赖 (CAD DLLs)                    
+│   └── AutoCAD/                    
+│       ├── Net2.0_2007-2009/                    
+│       ├── Net3.5_2010-2012/                    
+│       ... (其他版本)                    
+│       └── Net10.0_2027/                    
+├── OpenCadIme.Core/      # 核心逻辑共享项目 (Shared Project)                    
+│   ├── Core/             # 核心逻辑 (CommandInterceptor, ConfigManager 等)                    
+│   ├── Interop/          # Win32 API 调用                    
+│   ├── UI/               # UI 逻辑 (HudManager, LegacyForm, ModernWpf)                    
+│   ├── AppConstants.cs   # 常量定义                    
+│   ├── PluginMain.cs     # 插件入口                    
+│   └── UpdateManager.cs  # 更新检查                    
+├── src/                  # 各版本适配层 (版本差异化包装)                    
+│   ├── OpenCadIme_Sys17/                    
+│   ├── OpenCadIme_Sys18/                    
+│   ... (其他 SysXX 项目)                    
+│   └── OpenCadIme_Sys27/                    
+├── CAD Auto IME.sln      # Visual Studio 解决方案文件                    
+├── LICENSE.txt           # 开源协议                    
 └── README.md             # 项目说明文档  
 ```
 
@@ -268,17 +268,11 @@ CAD Auto IME/
 
 ## 📜 版本历史
 
-### v0.4.3 (2026-09) - Win32 TSF 现代架构校准与全状态决策加固
+### v0.4.3 (2026-09) - 架构校准与全状态决策加固
 
-- ⚡ **Win32 TSF 原生规范与 GUID 架构级校准**：依据微软 Windows SDK（`msctf.idl`）深度校准 TSF 原生 COM 接口与隔间 GUID 定义（精准纠正 `IID_ITfCompartmentMgr`、`IID_ITfCompartment` 与 `GUID_COMPARTMENT_KEYBOARD_OPENCLOSE` 等定义偏差），解决 `QueryInterface` 接口未命中问题，打通与 Windows 10/11 现代输入法（微软拼音、搜狗、微信输入法等）底层双轨无损直连通道。
-- 🚫 **彻底消灭乒乓切换死循环与界面卡顿**：移除定时器主动轮询与冗余窗口消息广播（`PostMessage WM_INPUTLANGCHANGEREQUEST`），引入状态幂等防抖门禁（Idempotent State Guard），同一目标状态仅耗时 < 0.05ms 生效一次，彻底消除天正等第三方插件界面下输入法频繁在“中/英”之间跳变闪烁、鼠标悬停卡顿与消息风暴。
-- 🎯 **文本控件焦点最高裁决权 (Focus Supremacy)**：深度兼容天正、探索者、鸿业、源泉、CASS、AutoCAD 原生及所有第三方 ObjectARX / MFC 对话框输入控件，采用前台活动线程真实焦点实时判定，确保弹窗输入必定保持中文，杜绝画布逻辑反客为主压制弹窗输入。
-- 🔄 **ESC 键与空白绘图区即刻复位**：强化 ESC 取消键与鼠标点击绘图区的即时感知，按下 ESC 或点击空白视口立即重置焦点缓存与状态防抖锁，100% 毫秒级复位至纯英文命令待命状态。
-- 🛠️ **状态决策树重构**：优化状态机优先级判定，确保在绘图视口下文字命令不被误强切英文，修复多次编辑后自动切换失效问题。
-- 📋 **命令活跃状态保护**：结合系统变量 `CMDNAMES` 校验与交互提示阶段过滤，在多阶段交互过程中准确保持命令上下文。
-- 💡 **HUD 欢迎面板就绪感知与多波次轮询**：解决冷启动或载入大型图纸时因单次定时器过期导致 HUD 漏弹的问题，引入 300ms 多波次（最多 20 次探测）视口与文档就绪检测；仅在成功呈现后后置写入标记；新增 `TESTHUD` / `SHOWHUD` 命令支持随时预览测试。
-- 🛠️ **安装向导注册表自愈**：在 Inno Setup 安装向导（安装与卸载阶段）自动清理重置 `WelcomeHud` 历史注册表残留，彻底解决覆盖重装后无法弹出欢迎提示与版本信息的缺陷。
-- 📦 **依赖与版本适配**：统一规范 `Libs/AutoCAD` 依赖库目录结构，全世代平滑支持 AutoCAD 2007~2027 (Net2.0 ~ Net10.0)。
+- ⚡【彻底消灭闪烁与卡顿】：重构底层通道，彻底消除输入法频繁跳变闪烁与界面卡顿，支持按 Shift 键原生自由切换中英文。
+- 🎯【天正及第三方插件深度兼容】：天正建筑、探索者、源泉、CASS 等第三方插件的文本框与对话框，自动稳定保持中文输入，不再被绘图区误切英文。
+- 💡【HUD 欢迎提示修复与测试命令】：修复重新安装或升级后欢迎悬浮窗不弹出的缺陷；新增 `TESTHUD` / `SHOWHUD` 命令支持随时手动测试验证。
 
 ### v0.4.2 (2026-07) - 双击时序与输入法通道优化
 
